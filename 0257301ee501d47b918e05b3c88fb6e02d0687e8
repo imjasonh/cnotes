@@ -1,0 +1,12 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T13:51:45.240278-04:00",
+  "conversation_excerpt": "\nTool interactions since last commit:\n- Write: /Users/jason/git/hooks/test-multi-session.txt\n- Bash: git add test-multi-session.txt \u0026\u0026 git commit -m \"Test: multi-session context in git notes\"\n- Bash: ./cnotes show | grep -A20 \"User prompts\"\n- Bash: ./cnotes show | head -50\n- Bash: git notes --ref=claude-conversations show HEAD | jq -r '.conversation_excerpt' | grep -i \"user\"\n- Edit: [REDACTED].go\n- Edit: /Users/jason/git/hooks/cmd/root.go\n- Bash: go build -o cnotes 2\u003e\u00261 \u0026\u0026 cp cnotes /Users/jason/go/bin/cnotes 2\u003e\u00261\n- Bash: rm test-multi-session.txt \u0026\u0026 echo \"Testing again\" \u003e test-multi-session.txt \u0026\u0026 git add test-multi-...",
+  "tools_used": [
+    "Bash",
+    "Write",
+    "Edit"
+  ],
+  "commit_context": "Git command: rm test-multi-session.txt \u0026\u0026 echo \"Testing again\" \u003e test-multi-session.txt \u0026\u0026 git add test-multi-session.txt \u0026\u0026 git commit -m \"Test: check multi-session debug\" 2\u003e\u00261\nResult: [main 0257301] Test: check multi-session debug",
+  "claude_version": "claude-sonnet-4-20250514"
+}
