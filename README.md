@@ -223,6 +223,47 @@ git fetch origin refs/notes/claude-conversations:refs/notes/claude-conversations
 git config remote.origin.fetch '+refs/notes/*:refs/notes/*'
 ```
 
+### Preserving Notes During Rebasing and Squashing
+
+**⚠️ Important**: Git notes can be lost during rebase, squash, and other destructive operations. This hooks system includes comprehensive protection:
+
+#### Automatic Protection
+
+The system automatically:
+- **Warns before destructive operations** like `git rebase`, `git reset --hard`, `git commit --amend`
+- **Configures git to preserve notes** during rebase operations
+- **Provides backup and restore commands** for manual recovery
+
+#### Manual Backup and Restore
+
+```bash
+# Backup all conversation notes
+./hooks notes backup my-notes-backup.json
+
+# List all commits with notes
+./hooks notes list
+
+# Restore notes from backup (after rebase/squash)
+./hooks notes restore my-notes-backup.json
+```
+
+#### Automatic Git Configuration
+
+The system configures git to preserve notes:
+```bash
+git config notes.rewrite.mode copy
+git config notes.rewriteRef refs/notes/claude-conversations
+```
+
+This ensures notes are automatically copied to new commit hashes during rebasing.
+
+#### Best Practices
+
+1. **Before major rebasing**: Run `./hooks notes backup` to create a safety backup
+2. **Use the copy mode**: The system auto-configures git to copy notes during rewrites
+3. **Check after operations**: Run `./hooks notes list` to verify notes are preserved
+4. **Manual restore**: Use `./hooks notes restore` if any notes are lost
+
 ## Testing Hooks
 
 Test individual hooks by piping JSON:

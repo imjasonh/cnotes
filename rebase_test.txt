@@ -1,2 +1,0 @@
-# Test rebase notes preservation
-# Test commit 2

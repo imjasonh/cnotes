@@ -58,6 +58,7 @@ This is a Claude Code hooks system that intercepts and processes all tool usage 
 **`cmd/`** - CLI interface using Cobra
 - `run.go` - Handles hook execution (called by Claude Code)
 - `install.go` - Manages hook installation/uninstallation
+- `notes.go` - Git notes backup, restore, and management commands
 
 ### Type Safety and JSON Handling
 
@@ -137,6 +138,20 @@ git log --show-notes=claude-conversations --oneline
 - Tools used during the session
 - Commit context (command and git output)
 - Claude version information
+
+**Notes Preservation**:
+```bash
+# Backup all conversation notes
+./hooks notes backup [filename]
+
+# List all commits with notes
+./hooks notes list  
+
+# Restore from backup after destructive operations
+./hooks notes restore <filename>
+```
+
+The system automatically warns before destructive git operations and configures git to preserve notes during rewrites.
 
 ## Key Design Principles
 
