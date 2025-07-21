@@ -117,11 +117,11 @@ func ExtractCommitHashFromOutput(output string) string {
 	return ""
 }
 
-// IsGitCommitCommand checks if a bash command is a git commit
+// IsGitCommitCommand checks if a bash command contains a git commit
 func IsGitCommitCommand(command string) bool {
 	command = strings.TrimSpace(command)
 
-	// Handle various git commit patterns
+	// Handle various git commit patterns - check if command contains any of these
 	patterns := []string{
 		"git commit",
 		"git commit -m",
@@ -130,7 +130,7 @@ func IsGitCommitCommand(command string) bool {
 	}
 
 	for _, pattern := range patterns {
-		if strings.HasPrefix(command, pattern) {
+		if strings.Contains(command, pattern) {
 			return true
 		}
 	}

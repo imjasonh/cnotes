@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -42,7 +43,19 @@ func AttachConversationToCommit(ctx context.Context, input hooks.HookInput) (hoo
 	// Extract commit hash from tool response/result
 	var gitOutput string
 	if len(input.ToolResponse) > 0 {
-		gitOutput = string(input.ToolResponse)
+		// Parse the JSON response to extract stdout
+		var toolResponse struct {
+			Stdout      string `json:"stdout"`
+			Stderr      string `json:"stderr"`
+			Interrupted bool   `json:"interrupted"`
+			IsImage     bool   `json:"isImage"`
+		}
+		if err := json.Unmarshal(input.ToolResponse, &toolResponse); err == nil {
+			gitOutput = toolResponse.Stdout
+		} else {
+			// Fallback to raw string if JSON parsing fails
+			gitOutput = string(input.ToolResponse)
+		}
 	} else if len(input.ToolUseResult) > 0 {
 		gitOutput = string(input.ToolUseResult)
 	}

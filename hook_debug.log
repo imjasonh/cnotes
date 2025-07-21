@@ -1,0 +1,16 @@
+=== GIT COMMIT HOOK DEBUG ===
+SessionID: 2696197e-6c68-419c-83fd-22cd3ee376fa
+CWD: /Users/jason/git/hooks
+HookEventName: PostToolUse
+ToolName: Bash
+ToolInput length: 99
+ToolResponse length: 61
+ToolUseResult length: 0
+ToolInput: {"command":"rm -f test_debug*.txt hook_debug.log","description":"Remove debug test files and logs"}
+ToolResponse: {"stdout":"","stderr":"","interrupted":false,"isImage":false}
+=== END DEBUG ===
+
+GetBashInput error: <nil>
+Bash command: rm -f test_debug*.txt hook_debug.log
+Is git commit command: false
+Not a git commit command, skipping
