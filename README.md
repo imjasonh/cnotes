@@ -1,6 +1,6 @@
 # cnotes - Git Notes for Claude Conversations
 
-**cnotes** automatically captures Claude conversation context in git notes, making it easy to understand the development history and reasoning behind each commit.
+**cnotes** automatically captures Claude conversation context in git notes, making it easy to understand the development history and reasoning behind each commit. The tool shows a conversational transcript of user prompts, tool uses, and Claude's responses.
 
 ⭐️ `cnotes` is pronounced like 💵 c-notes or 🏊 [_cenotes_](https://en.wikipedia.org/wiki/Cenote)
 
