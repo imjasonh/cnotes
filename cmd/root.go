@@ -144,10 +144,10 @@ func processGitCommit(ctx context.Context, input HookInput, bashInput BashToolIn
 
 	// Get the last event time from the previous commit to avoid duplicates
 	lastEventTime := getLastEventTimeFromPreviousCommit(ctx, notesManager)
-	
+
 	// Small delay to ensure transcript is written
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Extract conversation context since the last event
 	contextExtractor := conv.NewContextExtractor(cfg)
 	conversationContext, err := contextExtractor.ExtractContextSince(input.TranscriptPath, input.SessionID, lastEventTime)
@@ -257,22 +257,22 @@ func getLastEventTimeFromPreviousCommit(ctx context.Context, notesManager *notes
 		if err != nil {
 			return time.Time{}
 		}
-		
+
 		timeStr := strings.TrimSpace(string(output))
 		commitTime, err := time.Parse(time.RFC3339, timeStr)
 		if err != nil {
 			return time.Time{}
 		}
-		
+
 		// Use a 60 second buffer for the first commit in a session
 		return commitTime.Add(-60 * time.Second)
 	}
-	
+
 	// If we have a previous note with LastEventTime, use it
 	if !note.LastEventTime.IsZero() {
 		return note.LastEventTime
 	}
-	
+
 	// Fall back to commit time with buffer
 	return note.Timestamp.Add(-60 * time.Second)
 }

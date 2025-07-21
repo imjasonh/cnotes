@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -21,10 +20,7 @@ type NotesBackup struct {
 // BackupAllNotes creates a backup of all notes in the specified ref
 func (nm *NotesManager) BackupAllNotes(ctx context.Context) (*NotesBackup, error) {
 	// Get list of all commits with notes
-	cmd := exec.CommandContext(ctx, "git", "notes", "--ref", nm.notesRef, "list")
-	cmd.Dir = nm.workDir
-
-	output, err := cmd.Output()
+	output, err := nm.git.Execute(ctx, nm.workDir, "notes", "--ref", nm.notesRef, "list")
 	if err != nil {
 		// No notes exist, return empty backup
 		return &NotesBackup{
@@ -105,9 +101,8 @@ func (nm *NotesManager) RestoreNotesFromBackup(ctx context.Context, backup *Note
 
 	for commitHash, note := range backup.Notes {
 		// Check if the commit still exists
-		cmd := exec.CommandContext(ctx, "git", "cat-file", "-e", commitHash)
-		cmd.Dir = nm.workDir
-		if err := cmd.Run(); err != nil {
+		_, err := nm.git.Execute(ctx, nm.workDir, "cat-file", "-e", commitHash)
+		if err != nil {
 			// Commit doesn't exist anymore, skip
 			skipped++
 			continue

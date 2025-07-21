@@ -97,7 +97,7 @@ If no commit is specified, shows notes for HEAD.`,
 
 		if note == nil {
 			fmt.Printf("No conversation notes found for commit %s\n", commit)
-			fmt.Printf("💡 Use './hooks notes list' to see which commits have notes\n")
+			fmt.Printf("💡 Use 'cnotes notes list' to see which commits have notes\n")
 			return nil
 		}
 
@@ -134,7 +134,7 @@ var listCmd = &cobra.Command{
 			fmt.Printf("  Tools: %v\n\n", note.ToolsUsed)
 		}
 
-		fmt.Printf("💡 View notes with: ./hooks notes show <commit>\n")
+		fmt.Printf("💡 View notes with: 'cnotes notes show <commit>'\n")
 		return nil
 	},
 }
@@ -184,27 +184,27 @@ func formatConversationExcerpt(excerpt string, cfg *config.NotesConfig) string {
 	for strings.Contains(formatted, "\n\n\n") {
 		formatted = strings.ReplaceAll(formatted, "\n\n\n", "\n\n")
 	}
-	
+
 	// Format different message types for better visual distinction
 	lines := strings.Split(formatted, "\n")
 	var formattedLines []string
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			formattedLines = append(formattedLines, "")
 			continue
 		}
-		
+
 		switch {
 		case strings.HasPrefix(line, "User:") || (cfg != nil && cfg.UserEmoji != "" && strings.HasPrefix(line, cfg.UserEmoji)):
 			// Bold user prompts
 			formattedLines = append(formattedLines, "**"+line+"**")
-			
+
 		case strings.HasPrefix(line, "Claude:") || (cfg != nil && cfg.AssistantEmoji != "" && strings.HasPrefix(line, cfg.AssistantEmoji)):
 			// Keep Claude responses as-is
 			formattedLines = append(formattedLines, line)
-			
+
 		case strings.HasPrefix(line, "Tool ("):
 			// Format tool uses in code blocks
 			toolParts := strings.SplitN(line, ": ", 2)
@@ -216,7 +216,7 @@ func formatConversationExcerpt(excerpt string, cfg *config.NotesConfig) string {
 			} else {
 				formattedLines = append(formattedLines, line)
 			}
-			
+
 		case strings.HasPrefix(line, "Result:"):
 			// Format results in code blocks
 			resultParts := strings.SplitN(line, ": ", 2)
@@ -228,7 +228,7 @@ func formatConversationExcerpt(excerpt string, cfg *config.NotesConfig) string {
 			} else {
 				formattedLines = append(formattedLines, line)
 			}
-			
+
 		default:
 			// Handle multi-line content that might be part of a previous block
 			formattedLines = append(formattedLines, line)

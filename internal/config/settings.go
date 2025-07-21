@@ -26,7 +26,9 @@ func LoadSettings(path string) (*Settings, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &Settings{}, nil
+			return &Settings{
+				Hooks: make(map[string][]HookDefinition),
+			}, nil
 		}
 		return nil, fmt.Errorf("failed to read settings: %w", err)
 	}

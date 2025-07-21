@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+// GitExecutor defines the interface for executing git commands
+type GitExecutor interface {
+	Execute(ctx context.Context, dir string, args ...string) ([]byte, error)
+}
+
 // ConversationNote represents the structured data we store in git notes
 type ConversationNote struct {
 	SessionID           string    `json:"session_id"`
@@ -20,10 +25,21 @@ type ConversationNote struct {
 	LastEventTime       time.Time `json:"last_event_time,omitempty"` // Track last processed event to avoid duplicates
 }
 
+// RealGitExecutor is the default implementation that runs actual git commands
+type RealGitExecutor struct{}
+
+// Execute runs a git command and returns its output
+func (e *RealGitExecutor) Execute(ctx context.Context, dir string, args ...string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd.Dir = dir
+	return cmd.Output()
+}
+
 // NotesManager handles git notes operations for Claude conversations
 type NotesManager struct {
 	notesRef string
 	workDir  string
+	git      GitExecutor
 }
 
 // NewNotesManager creates a new notes manager
@@ -31,6 +47,16 @@ func NewNotesManager(workDir string) *NotesManager {
 	return &NotesManager{
 		notesRef: "claude-conversations",
 		workDir:  workDir,
+		git:      &RealGitExecutor{},
+	}
+}
+
+// NewNotesManagerWithExecutor creates a new notes manager with a custom git executor
+func NewNotesManagerWithExecutor(workDir string, git GitExecutor) *NotesManager {
+	return &NotesManager{
+		notesRef: "claude-conversations",
+		workDir:  workDir,
+		git:      git,
 	}
 }
 
@@ -50,12 +76,9 @@ func (nm *NotesManager) AddConversationNote(ctx context.Context, commitHash stri
 	}
 
 	// Use git notes add command with custom ref
-	cmd := exec.CommandContext(ctx, "git", "notes", "--ref", nm.notesRef, "add", "-m", string(noteData), commitHash)
-	cmd.Dir = nm.workDir
-
-	output, err := cmd.CombinedOutput()
+	_, err = nm.git.Execute(ctx, nm.workDir, "notes", "--ref", nm.notesRef, "add", "-m", string(noteData), commitHash)
 	if err != nil {
-		return fmt.Errorf("failed to add git note: %w (output: %s)", err, string(output))
+		return fmt.Errorf("failed to add git note: %w", err)
 	}
 
 	return nil
@@ -63,10 +86,7 @@ func (nm *NotesManager) AddConversationNote(ctx context.Context, commitHash stri
 
 // GetConversationNote retrieves a conversation note for a specific commit
 func (nm *NotesManager) GetConversationNote(ctx context.Context, commitHash string) (*ConversationNote, error) {
-	cmd := exec.CommandContext(ctx, "git", "notes", "--ref", nm.notesRef, "show", commitHash)
-	cmd.Dir = nm.workDir
-
-	output, err := cmd.Output()
+	output, err := nm.git.Execute(ctx, nm.workDir, "notes", "--ref", nm.notesRef, "show", commitHash)
 	if err != nil {
 		// Note might not exist, which is normal
 		return nil, nil

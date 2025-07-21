@@ -10,17 +10,17 @@ import (
 	"sort"
 	"strings"
 	"time"
-	
+
 	"github.com/imjasonh/cnotes/internal/config"
 )
 
 // ConversationContext represents relevant conversation context for a commit
 type ConversationContext struct {
-	UserPrompts      []string          `json:"user_prompts"`
-	ClaudeResponses  []string          `json:"claude_responses"`
-	ToolInteractions []ToolInteraction `json:"tool_interactions"`
-	Events           []ConversationEvent `json:"events"` // New: chronological events
-	LastEventTime    time.Time         `json:"last_event_time"` // Track the latest event timestamp
+	UserPrompts      []string            `json:"user_prompts"`
+	ClaudeResponses  []string            `json:"claude_responses"`
+	ToolInteractions []ToolInteraction   `json:"tool_interactions"`
+	Events           []ConversationEvent `json:"events"`          // New: chronological events
+	LastEventTime    time.Time           `json:"last_event_time"` // Track the latest event timestamp
 }
 
 // ConversationEvent represents any event in the conversation
@@ -81,7 +81,7 @@ func (ce *ContextExtractor) ExtractContextSince(transcriptPath string, sessionID
 
 	// Get the directory containing transcripts
 	transcriptDir := filepath.Dir(transcriptPath)
-	
+
 	// Initialize combined context
 	combinedContext := &ConversationContext{
 		UserPrompts:      []string{},
@@ -102,13 +102,13 @@ func (ce *ContextExtractor) ExtractContextSince(transcriptPath string, sessionID
 		if !strings.HasSuffix(file.Name(), ".jsonl") {
 			continue
 		}
-		
+
 		filePath := filepath.Join(transcriptDir, file.Name())
 		context, err := ce.extractFromSingleTranscript(filePath, "", since) // Empty sessionID to get all sessions
 		if err != nil {
 			continue // Skip files that can't be read
 		}
-		
+
 		// Merge contexts
 		combinedContext.UserPrompts = append(combinedContext.UserPrompts, context.UserPrompts...)
 		combinedContext.ClaudeResponses = append(combinedContext.ClaudeResponses, context.ClaudeResponses...)
@@ -151,7 +151,7 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 	}
 
 	lines := strings.Split(content, "\n")
-	
+
 	// Parse JSONL format
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -178,7 +178,7 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 		if timestampStr, ok := entry["timestamp"].(string); ok {
 			entryTime, _ = time.Parse(time.RFC3339, timestampStr)
 		}
-		
+
 		// Filter by timestamp if provided
 		if !since.IsZero() && !entryTime.IsZero() && entryTime.Before(since) {
 			continue // Skip entries before the cutoff
@@ -186,7 +186,7 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 
 		// Extract based on type
 		entryType, _ := entry["type"].(string)
-		
+
 		switch entryType {
 		case "user":
 			// Extract user prompts
@@ -223,7 +223,7 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 					}
 				}
 			}
-			
+
 		case "assistant":
 			// Extract tool uses and text responses from assistant messages
 			if msg, ok := entry["message"].(map[string]interface{}); ok {
@@ -231,7 +231,7 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 					for _, c := range content {
 						if contentItem, ok := c.(map[string]interface{}); ok {
 							contentType, _ := contentItem["type"].(string)
-							
+
 							switch contentType {
 							case "text":
 								// Assistant text response
@@ -244,7 +244,7 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 										Content:   text,
 									})
 								}
-							
+
 							case "tool_use":
 								// Tool use
 								toolName, _ := contentItem["name"].(string)
@@ -252,7 +252,7 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 									interaction := ToolInteraction{
 										Tool: toolName,
 									}
-									
+
 									// Extract key information based on tool type
 									switch toolName {
 									case "Bash":
@@ -277,7 +277,7 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 											interaction.Input = string(bytes)
 										}
 									}
-									
+
 									if interaction.Input != "" {
 										context.ToolInteractions = append(context.ToolInteractions, interaction)
 										// Add to events
@@ -294,19 +294,19 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 					}
 				}
 			}
-		
+
 		case "tool_result":
 			// Extract tool results
 			if result, ok := entry["result"].(map[string]interface{}); ok {
 				var resultContent string
 				toolName, _ := entry["tool_name"].(string)
-				
+
 				if stdout, ok := result["stdout"].(string); ok && stdout != "" {
 					resultContent = stdout
 				} else if output, ok := result["output"].(string); ok && output != "" {
 					resultContent = output
 				}
-				
+
 				if resultContent != "" {
 					// Add to events
 					context.Events = append(context.Events, ConversationEvent{
@@ -329,7 +329,6 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 
 	return context
 }
-
 
 // filterSensitiveContent removes sensitive information from context
 func (ce *ContextExtractor) filterSensitiveContent(context *ConversationContext) *ConversationContext {
@@ -370,7 +369,7 @@ func (ce *ContextExtractor) CreateExcerpt(context *ConversationContext) string {
 	var parts []string
 	for _, event := range context.Events {
 		var line string
-		
+
 		switch event.Type {
 		case "user":
 			// Format user prompts
@@ -383,7 +382,7 @@ func (ce *ContextExtractor) CreateExcerpt(context *ConversationContext) string {
 				emoji = ce.config.UserEmoji
 			}
 			line = fmt.Sprintf("%s User: %s", emoji, content)
-			
+
 		case "assistant":
 			// Format assistant responses
 			content := event.Content
@@ -395,7 +394,7 @@ func (ce *ContextExtractor) CreateExcerpt(context *ConversationContext) string {
 				emoji = ce.config.AssistantEmoji
 			}
 			line = fmt.Sprintf("%s Claude: %s", emoji, content)
-			
+
 		case "tool":
 			// Format tool uses
 			content := event.Content
@@ -403,7 +402,7 @@ func (ce *ContextExtractor) CreateExcerpt(context *ConversationContext) string {
 				content = content[:147] + "..."
 			}
 			line = fmt.Sprintf("Tool (%s): %s", event.ToolName, content)
-			
+
 		case "tool_result":
 			// Format tool results - show abbreviated output
 			content := event.Content
@@ -415,7 +414,7 @@ func (ce *ContextExtractor) CreateExcerpt(context *ConversationContext) string {
 			}
 			line = fmt.Sprintf("Result: %s", content)
 		}
-		
+
 		if line != "" {
 			parts = append(parts, line)
 		}
