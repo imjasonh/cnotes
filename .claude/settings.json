@@ -9,15 +9,6 @@
             "command": "/Users/jason/go/bin/cnotes"
           }
         ]
-      },
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/var/folders/3z/q0v7phks3lsc_ryxstdz5h3m0000gn/T/go-build618894364/b001/exe/cnotes"
-          }
-        ]
       }
     ],
     "PostToolUse": [
@@ -27,15 +18,6 @@
           {
             "type": "command",
             "command": "/Users/jason/go/bin/cnotes"
-          }
-        ]
-      },
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/var/folders/3z/q0v7phks3lsc_ryxstdz5h3m0000gn/T/go-build618894364/b001/exe/cnotes"
           }
         ]
       }
@@ -49,15 +31,6 @@
             "command": "/Users/jason/go/bin/cnotes"
           }
         ]
-      },
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/var/folders/3z/q0v7phks3lsc_ryxstdz5h3m0000gn/T/go-build618894364/b001/exe/cnotes"
-          }
-        ]
       }
     ],
     "PreToolUse": [
@@ -67,15 +40,6 @@
           {
             "type": "command",
             "command": "/Users/jason/go/bin/cnotes"
-          }
-        ]
-      },
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/var/folders/3z/q0v7phks3lsc_ryxstdz5h3m0000gn/T/go-build618894364/b001/exe/cnotes"
           }
         ]
       }
@@ -89,15 +53,6 @@
             "command": "/Users/jason/go/bin/cnotes"
           }
         ]
-      },
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/var/folders/3z/q0v7phks3lsc_ryxstdz5h3m0000gn/T/go-build618894364/b001/exe/cnotes"
-          }
-        ]
       }
     ],
     "SubagentStop": [
@@ -109,15 +64,6 @@
             "command": "/Users/jason/go/bin/cnotes"
           }
         ]
-      },
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/var/folders/3z/q0v7phks3lsc_ryxstdz5h3m0000gn/T/go-build618894364/b001/exe/cnotes"
-          }
-        ]
       }
     ],
     "UserPromptSubmit": [
@@ -127,15 +73,6 @@
           {
             "type": "command",
             "command": "/Users/jason/go/bin/cnotes"
-          }
-        ]
-      },
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/var/folders/3z/q0v7phks3lsc_ryxstdz5h3m0000gn/T/go-build618894364/b001/exe/cnotes"
           }
         ]
       }
