@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/imjasonh/cnotes/internal/config"
 	"github.com/imjasonh/cnotes/internal/notes"
 	"github.com/spf13/cobra"
 )
@@ -101,7 +102,8 @@ If no commit is specified, shows notes for HEAD.`,
 		}
 
 		// Pretty-print in Markdown format
-		printConversationMarkdown(*note, commit)
+		cfg := config.LoadNotesConfig(".")
+		printConversationMarkdown(*note, commit, cfg)
 		return nil
 	},
 }
@@ -138,7 +140,7 @@ var listCmd = &cobra.Command{
 }
 
 // printConversationMarkdown formats a conversation note as readable Markdown
-func printConversationMarkdown(note notes.ConversationNote, commit string) {
+func printConversationMarkdown(note notes.ConversationNote, commit string, cfg *config.NotesConfig) {
 	fmt.Printf("# Claude Conversation Notes\n\n")
 
 	// Get commit info
@@ -155,7 +157,7 @@ func printConversationMarkdown(note notes.ConversationNote, commit string) {
 	if note.ConversationExcerpt != "" {
 		fmt.Printf("## Conversation Transcript\n\n")
 		// Clean up and format the conversation excerpt for better readability
-		formatted := formatConversationExcerpt(note.ConversationExcerpt)
+		formatted := formatConversationExcerpt(note.ConversationExcerpt, cfg)
 		fmt.Printf("%s\n\n", formatted)
 	}
 
@@ -164,7 +166,7 @@ func printConversationMarkdown(note notes.ConversationNote, commit string) {
 }
 
 // formatConversationExcerpt cleans up the conversation excerpt for better readability
-func formatConversationExcerpt(excerpt string) string {
+func formatConversationExcerpt(excerpt string, cfg *config.NotesConfig) string {
 	// Replace escaped newlines with actual newlines
 	formatted := strings.ReplaceAll(excerpt, "\\n", "\n")
 
@@ -195,11 +197,11 @@ func formatConversationExcerpt(excerpt string) string {
 		}
 		
 		switch {
-		case strings.HasPrefix(line, "User:"):
+		case strings.HasPrefix(line, "User:") || (cfg != nil && cfg.UserEmoji != "" && strings.HasPrefix(line, cfg.UserEmoji)):
 			// Bold user prompts
 			formattedLines = append(formattedLines, "**"+line+"**")
 			
-		case strings.HasPrefix(line, "Claude:"):
+		case strings.HasPrefix(line, "Claude:") || (cfg != nil && cfg.AssistantEmoji != "" && strings.HasPrefix(line, cfg.AssistantEmoji)):
 			// Keep Claude responses as-is
 			formattedLines = append(formattedLines, line)
 			

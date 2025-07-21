@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+	
+	"github.com/imjasonh/cnotes/internal/config"
 )
 
 // ConversationContext represents relevant conversation context for a commit
@@ -40,10 +42,11 @@ type ToolInteraction struct {
 type ContextExtractor struct {
 	maxExcerptLength  int
 	sensitivePatterns []*regexp.Regexp
+	config            *config.NotesConfig
 }
 
 // NewContextExtractor creates a new context extractor with default settings
-func NewContextExtractor() *ContextExtractor {
+func NewContextExtractor(cfg *config.NotesConfig) *ContextExtractor {
 	// Patterns to filter out sensitive information
 	sensitivePatterns := []*regexp.Regexp{
 		regexp.MustCompile(`(?i)(password|token|key|secret)[:\s]*[^\s\n]+`),
@@ -52,9 +55,15 @@ func NewContextExtractor() *ContextExtractor {
 		regexp.MustCompile(`[A-Za-z0-9+/]{40,}={0,2}`), // Base64 encoded secrets
 	}
 
+	maxLength := 5000
+	if cfg != nil && cfg.MaxExcerptLength > 0 {
+		maxLength = cfg.MaxExcerptLength
+	}
+
 	return &ContextExtractor{
-		maxExcerptLength:  5000, // 5KB limit for context
+		maxExcerptLength:  maxLength,
 		sensitivePatterns: sensitivePatterns,
+		config:            cfg,
 	}
 }
 
@@ -361,7 +370,11 @@ func (ce *ContextExtractor) CreateExcerpt(context *ConversationContext) string {
 			if len(content) > 200 {
 				content = content[:197] + "..."
 			}
-			line = fmt.Sprintf("User: %s", content)
+			emoji := "👤"
+			if ce.config != nil && ce.config.UserEmoji != "" {
+				emoji = ce.config.UserEmoji
+			}
+			line = fmt.Sprintf("%s User: %s", emoji, content)
 			
 		case "assistant":
 			// Format assistant responses
@@ -369,7 +382,11 @@ func (ce *ContextExtractor) CreateExcerpt(context *ConversationContext) string {
 			if len(content) > 200 {
 				content = content[:197] + "..."
 			}
-			line = fmt.Sprintf("Claude: %s", content)
+			emoji := "🤖"
+			if ce.config != nil && ce.config.AssistantEmoji != "" {
+				emoji = ce.config.AssistantEmoji
+			}
+			line = fmt.Sprintf("%s Claude: %s", emoji, content)
 			
 		case "tool":
 			// Format tool uses

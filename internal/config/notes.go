@@ -14,6 +14,8 @@ type NotesConfig struct {
 	IncludeToolOutput bool     `json:"include_tool_output"` // Whether to include tool output in notes
 	NotesRef          string   `json:"notes_ref"`           // Git notes reference name
 	ExcludePatterns   []string `json:"exclude_patterns"`    // Patterns to exclude from notes
+	UserEmoji         string   `json:"user_emoji"`          // Emoji to use for user messages
+	AssistantEmoji    string   `json:"assistant_emoji"`     // Emoji to use for assistant messages
 }
 
 // DefaultNotesConfig returns the default configuration
@@ -32,6 +34,8 @@ func DefaultNotesConfig() *NotesConfig {
 			"api_key",
 			"auth",
 		},
+		UserEmoji:      "👤",
+		AssistantEmoji: "🤖",
 	}
 }
 
@@ -61,6 +65,12 @@ func LoadNotesConfig(projectDir string) *NotesConfig {
 	}
 	if config.MaxPrompts <= 0 {
 		config.MaxPrompts = 2
+	}
+	if config.UserEmoji == "" {
+		config.UserEmoji = "👤"
+	}
+	if config.AssistantEmoji == "" {
+		config.AssistantEmoji = "🤖"
 	}
 
 	return &config

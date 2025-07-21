@@ -132,7 +132,7 @@ func processGitCommit(ctx context.Context, input HookInput, bashInput BashToolIn
 		return fmt.Errorf("could not extract commit hash")
 	}
 
-	// Create notes manager
+	// Create notes manager and load config
 	notesManager := notes.NewNotesManager(input.CWD)
 	cfg := config.LoadNotesConfig(input.CWD)
 	notesManager.SetNotesRef(cfg.NotesRef)
@@ -149,7 +149,7 @@ func processGitCommit(ctx context.Context, input HookInput, bashInput BashToolIn
 	time.Sleep(100 * time.Millisecond)
 	
 	// Extract conversation context since the last commit
-	contextExtractor := conv.NewContextExtractor()
+	contextExtractor := conv.NewContextExtractor(cfg)
 	conversationContext, err := contextExtractor.ExtractContextSince(input.TranscriptPath, input.SessionID, previousCommitTime)
 	if err != nil {
 		return fmt.Errorf("failed to extract conversation context: %w", err)
