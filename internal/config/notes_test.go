@@ -9,39 +9,71 @@ import (
 )
 
 func TestDefaultNotesConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		field    string
+		getValue func(*NotesConfig) interface{}
+		want     interface{}
+	}{
+		{
+			name:     "Enabled default",
+			field:    "Enabled",
+			getValue: func(c *NotesConfig) interface{} { return c.Enabled },
+			want:     true,
+		},
+		{
+			name:     "MaxExcerptLength default",
+			field:    "MaxExcerptLength",
+			getValue: func(c *NotesConfig) interface{} { return c.MaxExcerptLength },
+			want:     5000,
+		},
+		{
+			name:     "MaxPrompts default",
+			field:    "MaxPrompts",
+			getValue: func(c *NotesConfig) interface{} { return c.MaxPrompts },
+			want:     400,
+		},
+		{
+			name:     "IncludeToolOutput default",
+			field:    "IncludeToolOutput",
+			getValue: func(c *NotesConfig) interface{} { return c.IncludeToolOutput },
+			want:     false,
+		},
+		{
+			name:     "NotesRef default",
+			field:    "NotesRef",
+			getValue: func(c *NotesConfig) interface{} { return c.NotesRef },
+			want:     "claude-conversations",
+		},
+		{
+			name:     "ExcludePatterns default",
+			field:    "ExcludePatterns",
+			getValue: func(c *NotesConfig) interface{} { return c.ExcludePatterns },
+			want:     []string{"password", "token", "key", "secret", "api_key", "auth"},
+		},
+		{
+			name:     "UserEmoji default",
+			field:    "UserEmoji",
+			getValue: func(c *NotesConfig) interface{} { return c.UserEmoji },
+			want:     "👤",
+		},
+		{
+			name:     "AssistantEmoji default",
+			field:    "AssistantEmoji",
+			getValue: func(c *NotesConfig) interface{} { return c.AssistantEmoji },
+			want:     "🤖",
+		},
+	}
+
 	config := DefaultNotesConfig()
 
-	if !config.Enabled {
-		t.Error("expected Enabled to be true by default")
-	}
-
-	if config.MaxExcerptLength != 5000 {
-		t.Errorf("expected MaxExcerptLength 5000, got %d", config.MaxExcerptLength)
-	}
-
-	if config.MaxPrompts != 100 {
-		t.Errorf("expected MaxPrompts 100, got %d", config.MaxPrompts)
-	}
-
-	if config.IncludeToolOutput {
-		t.Error("expected IncludeToolOutput to be false by default")
-	}
-
-	if config.NotesRef != "claude-conversations" {
-		t.Errorf("expected NotesRef claude-conversations, got %s", config.NotesRef)
-	}
-
-	expectedPatterns := []string{"password", "token", "key", "secret", "api_key", "auth"}
-	if !reflect.DeepEqual(config.ExcludePatterns, expectedPatterns) {
-		t.Errorf("unexpected exclude patterns: %v", config.ExcludePatterns)
-	}
-
-	if config.UserEmoji != "👤" {
-		t.Errorf("expected UserEmoji 👤, got %s", config.UserEmoji)
-	}
-
-	if config.AssistantEmoji != "🤖" {
-		t.Errorf("expected AssistantEmoji 🤖, got %s", config.AssistantEmoji)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.getValue(config)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("%s = %v, want %v", tt.field, got, tt.want)
+			}
+		})
 	}
 }
 
@@ -56,13 +88,18 @@ func TestLoadNotesConfig(t *testing.T) {
 	t.Run("no config file", func(t *testing.T) {
 		// When no config file exists, should return defaults
 		config := LoadNotesConfig(tempDir)
+		defaults := DefaultNotesConfig()
 
-		if !config.Enabled {
-			t.Error("expected default Enabled to be true")
+		if config.Enabled != defaults.Enabled {
+			t.Errorf("expected default Enabled to be %v, got %v", defaults.Enabled, config.Enabled)
 		}
 
-		if config.MaxExcerptLength != 5000 {
-			t.Errorf("expected default MaxExcerptLength 5000, got %d", config.MaxExcerptLength)
+		if config.MaxExcerptLength != defaults.MaxExcerptLength {
+			t.Errorf("expected default MaxExcerptLength %d, got %d", defaults.MaxExcerptLength, config.MaxExcerptLength)
+		}
+
+		if config.MaxPrompts != defaults.MaxPrompts {
+			t.Errorf("expected default MaxPrompts %d, got %d", defaults.MaxPrompts, config.MaxPrompts)
 		}
 	})
 
@@ -139,13 +176,14 @@ func TestLoadNotesConfig(t *testing.T) {
 
 		// Should return defaults when JSON is invalid
 		config := LoadNotesConfig(tempDir)
+		defaults := DefaultNotesConfig()
 
-		if !config.Enabled {
-			t.Error("expected default Enabled to be true")
+		if config.Enabled != defaults.Enabled {
+			t.Errorf("expected default Enabled to be %v, got %v", defaults.Enabled, config.Enabled)
 		}
 
-		if config.MaxExcerptLength != 5000 {
-			t.Errorf("expected default MaxExcerptLength 5000, got %d", config.MaxExcerptLength)
+		if config.MaxExcerptLength != defaults.MaxExcerptLength {
+			t.Errorf("expected default MaxExcerptLength %d, got %d", defaults.MaxExcerptLength, config.MaxExcerptLength)
 		}
 	})
 
@@ -178,24 +216,26 @@ func TestLoadNotesConfig(t *testing.T) {
 		}
 
 		// Should have defaults for missing fields
-		if config.NotesRef != "claude-conversations" {
-			t.Errorf("expected default NotesRef, got %s", config.NotesRef)
+		defaults := DefaultNotesConfig()
+
+		if config.NotesRef != defaults.NotesRef {
+			t.Errorf("expected default NotesRef %s, got %s", defaults.NotesRef, config.NotesRef)
 		}
 
-		if config.MaxExcerptLength != 5000 {
-			t.Errorf("expected default MaxExcerptLength, got %d", config.MaxExcerptLength)
+		if config.MaxExcerptLength != defaults.MaxExcerptLength {
+			t.Errorf("expected default MaxExcerptLength %d, got %d", defaults.MaxExcerptLength, config.MaxExcerptLength)
 		}
 
-		if config.MaxPrompts != 2 { // Note: defaults to 2 when 0
-			t.Errorf("expected default MaxPrompts 2, got %d", config.MaxPrompts)
+		if config.MaxPrompts != defaults.MaxPrompts {
+			t.Errorf("expected default MaxPrompts %d, got %d", defaults.MaxPrompts, config.MaxPrompts)
 		}
 
-		if config.UserEmoji != "👤" {
-			t.Errorf("expected default UserEmoji, got %s", config.UserEmoji)
+		if config.UserEmoji != defaults.UserEmoji {
+			t.Errorf("expected default UserEmoji %s, got %s", defaults.UserEmoji, config.UserEmoji)
 		}
 
-		if config.AssistantEmoji != "🤖" {
-			t.Errorf("expected default AssistantEmoji, got %s", config.AssistantEmoji)
+		if config.AssistantEmoji != defaults.AssistantEmoji {
+			t.Errorf("expected default AssistantEmoji %s, got %s", defaults.AssistantEmoji, config.AssistantEmoji)
 		}
 	})
 
@@ -227,24 +267,26 @@ func TestLoadNotesConfig(t *testing.T) {
 		config := LoadNotesConfig(tempDir)
 
 		// Should have defaults for zero/empty values
-		if config.NotesRef != "claude-conversations" {
-			t.Errorf("expected default NotesRef, got %s", config.NotesRef)
+		defaults := DefaultNotesConfig()
+
+		if config.NotesRef != defaults.NotesRef {
+			t.Errorf("expected default NotesRef %s, got %s", defaults.NotesRef, config.NotesRef)
 		}
 
-		if config.MaxExcerptLength != 5000 {
-			t.Errorf("expected default MaxExcerptLength, got %d", config.MaxExcerptLength)
+		if config.MaxExcerptLength != defaults.MaxExcerptLength {
+			t.Errorf("expected default MaxExcerptLength %d, got %d", defaults.MaxExcerptLength, config.MaxExcerptLength)
 		}
 
-		if config.MaxPrompts != 2 {
-			t.Errorf("expected default MaxPrompts, got %d", config.MaxPrompts)
+		if config.MaxPrompts != defaults.MaxPrompts {
+			t.Errorf("expected default MaxPrompts %d, got %d", defaults.MaxPrompts, config.MaxPrompts)
 		}
 
-		if config.UserEmoji != "👤" {
-			t.Errorf("expected default UserEmoji, got %s", config.UserEmoji)
+		if config.UserEmoji != defaults.UserEmoji {
+			t.Errorf("expected default UserEmoji %s, got %s", defaults.UserEmoji, config.UserEmoji)
 		}
 
-		if config.AssistantEmoji != "🤖" {
-			t.Errorf("expected default AssistantEmoji, got %s", config.AssistantEmoji)
+		if config.AssistantEmoji != defaults.AssistantEmoji {
+			t.Errorf("expected default AssistantEmoji %s, got %s", defaults.AssistantEmoji, config.AssistantEmoji)
 		}
 	})
 }

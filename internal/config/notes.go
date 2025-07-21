@@ -56,21 +56,24 @@ func LoadNotesConfig(projectDir string) *NotesConfig {
 		return DefaultNotesConfig()
 	}
 
+	// Get default config to use for missing values
+	defaults := DefaultNotesConfig()
+
 	// Ensure required fields have defaults if missing
 	if config.NotesRef == "" {
-		config.NotesRef = "claude-conversations"
+		config.NotesRef = defaults.NotesRef
 	}
 	if config.MaxExcerptLength <= 0 {
-		config.MaxExcerptLength = 5000
+		config.MaxExcerptLength = defaults.MaxExcerptLength
 	}
 	if config.MaxPrompts <= 0 {
-		config.MaxPrompts = 2
+		config.MaxPrompts = defaults.MaxPrompts
 	}
 	if config.UserEmoji == "" {
-		config.UserEmoji = "👤"
+		config.UserEmoji = defaults.UserEmoji
 	}
 	if config.AssistantEmoji == "" {
-		config.AssistantEmoji = "🤖"
+		config.AssistantEmoji = defaults.AssistantEmoji
 	}
 
 	return &config
