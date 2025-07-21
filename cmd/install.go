@@ -91,7 +91,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	fmt.Println("  • stop: Logs session completion")
 	fmt.Println("  • subagent_stop: Logs subagent completion")
 	fmt.Println("  • pre_compact: Handles context compaction events")
-	fmt.Println("\nTo test: echo '{\"event\":\"pre_tool_use\",\"tool\":\"Bash\",\"tool_use_request\":{\"tool\":\"Bash\",\"parameters\":{\"command\":\"ls\"}}}' | hooks run")
+	fmt.Println("\nTo test: echo '{\"event\":\"pre_tool_use\",\"tool\":\"Bash\",\"tool_use_request\":{\"tool\":\"Bash\",\"parameters\":{\"command\":\"ls\"}}}' | cnotes")
 
 	return nil
 }

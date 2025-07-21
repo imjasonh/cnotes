@@ -61,14 +61,14 @@ type HookOutput struct {
 func runHook(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	// Read input from stdin (called by Claude Code hooks)
-	inputBytes, err := io.ReadAll(os.Stdin)
+	// Check if stdin has data available with a short timeout
+	inputBytes, err := readStdinWithTimeout(2 * time.Second)
 	if err != nil {
 		return fmt.Errorf("failed to read input: %w", err)
 	}
 
 	if len(inputBytes) == 0 {
-		return fmt.Errorf("no input received")
+		return fmt.Errorf("no input received - cnotes expects JSON input from Claude Code hooks")
 	}
 
 	// Parse hook input
@@ -236,6 +236,27 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// readStdinWithTimeout reads from stdin with a timeout
+func readStdinWithTimeout(timeout time.Duration) ([]byte, error) {
+	type result struct {
+		data []byte
+		err  error
+	}
+
+	ch := make(chan result, 1)
+	go func() {
+		data, err := io.ReadAll(os.Stdin)
+		ch <- result{data, err}
+	}()
+
+	select {
+	case res := <-ch:
+		return res.data, res.err
+	case <-time.After(timeout):
+		return nil, fmt.Errorf("timeout waiting for input after %v", timeout)
+	}
 }
 
 func writeOutput(output HookOutput) error {

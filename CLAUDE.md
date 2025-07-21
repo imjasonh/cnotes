@@ -9,26 +9,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 go build -o cnotes
 
 # Install cnotes to capture conversation notes (project-level by default)
-./cnotes install
+cnotes install
 
 # Install to different scopes
-./cnotes install --global    # ~/.claude/settings.json
-./cnotes install --local     # ./.claude/settings.json
+cnotes install --global    # ~/.claude/settings.json
+cnotes install --local     # ./.claude/settings.json
 
 # Uninstall cnotes
-./cnotes install --uninstall
+cnotes install --uninstall
 
 # View conversation notes for commits
-./cnotes show              # Show notes for HEAD
-./cnotes show abc1234      # Show notes for specific commit
-./cnotes list             # List all commits with notes
+cnotes show              # Show notes for HEAD
+cnotes show abc1234      # Show notes for specific commit
+cnotes list             # List all commits with notes
 
 # Backup and restore notes
-./cnotes backup my-backup.json
-./cnotes restore my-backup.json
+cnotes backup my-backup.json
+cnotes restore my-backup.json
 
 # Test hook execution manually (for debugging)
-echo '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":"{\"command\":\"git commit -m test\"}"}' | ./cnotes
+echo '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":"{\"command\":\"git commit -m test\"}"}' | cnotes
 ```
 
 ## What cnotes Does
@@ -84,13 +84,13 @@ cnotes is a focused tool that automatically captures Claude conversation context
 
 **Pretty-Printed Viewing:**
 ```bash
-./cnotes show              # Beautifully formatted Markdown output
+cnotes show              # Beautifully formatted Markdown output
 ```
 
 **Backup and Restore:**
 ```bash
-./cnotes backup notes.json
-./cnotes restore notes.json
+cnotes backup notes.json
+cnotes restore notes.json
 ```
 
 **Privacy Controls:**
