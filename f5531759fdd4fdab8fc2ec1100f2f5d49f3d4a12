@@ -1,0 +1,12 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T13:52:58.457999-04:00",
+  "conversation_excerpt": "\nTool interactions since last commit:\n- Bash: rm test-multi-session.txt \u0026\u0026 echo \"Testing again\" \u003e test-multi-session.txt \u0026\u0026 git add test-multi-...\n- Bash: tail -20 /Users/jason/.claude/projects/-Users-jason-git-hooks/74f50245-6c21-42b6-8dfe-9b83ba8876f...\n- Bash: git log -2 --format=\"%h %cI %s\"\n- Bash: git notes --ref=claude-conversations show HEAD | jq '.conversation_excerpt' | grep -i \"prompt\"\n- Edit: [REDACTED].go\n- Edit: /Users/jason/git/hooks/cmd/root.go\n- TodoWrite: {\"todos\":[{\"content\":\"Remove all hook handler code (pretooluse, posttooluse, etc.)\",\"id\":\"1\",\"pri...\n- Bash: git rm test-multi-session.txt\n- Bash: go build -o cnotes \u0026\u0026 cp cnotes /Users/jason/go/bin/cnotes \u0026\u0026 git add -A \u0026\u0026 git commit -m \"Includ...",
+  "tools_used": [
+    "Bash",
+    "Edit",
+    "TodoWrite"
+  ],
+  "commit_context": "Git command: go build -o cnotes \u0026\u0026 cp cnotes /Users/jason/go/bin/cnotes \u0026\u0026 git add -A \u0026\u0026 git commit -m \"Include context from all transcript files in project directory\n\n- Scan all .jsonl files in the transcript directory, not just current session\n- Merge conversation context from all sessions since last commit\n- Ensures continuity when working across multiple Claude sessions\n- Each commit captures relevant context regardless of which session it came from\"\nResult: [main f553175] Include context from all transcript files in project directory",
+  "claude_version": "claude-sonnet-4-20250514"
+}
