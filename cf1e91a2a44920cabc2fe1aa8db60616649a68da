@@ -1,0 +1,14 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T13:50:34.235443-04:00",
+  "conversation_excerpt": "\nTool interactions since last commit:\n- Bash: git add -A \u0026\u0026 git commit -m \"Fix duplicate content in git notes by filtering since last commit\n\n-...\n- Read: [REDACTED].go\n- Read: /Users/jason/git/hooks/cmd/root.go\n- Bash: ls /Users/jason/.claude/projects/-Users-jason-git-hooks/*.jsonl | wc -l\n- TodoWrite: {\"todos\":[{\"content\":\"Remove all hook handler code (pretooluse, posttooluse, etc.)\",\"id\":\"1\",\"pri...\n- Bash: ls -la /Users/jason/.claude/projects/-Users-jason-git-hooks/ | head -10\n- Edit: [REDACTED].go\n- Edit: [REDACTED].go\n- Edit: [REDACTED].go\n- Bash: go build -o cnotes \u0026\u0026 cp cnotes /Users/jason/go/bin/cnotes\n- Write: /Users/jason/git/hooks/test-multi-session.txt\n- Bash: git add test-multi-session.txt \u0026\u0026 git commit -m \"Test: multi-session context in git notes\"",
+  "tools_used": [
+    "Bash",
+    "Read",
+    "TodoWrite",
+    "Edit",
+    "Write"
+  ],
+  "commit_context": "Git command: git add test-multi-session.txt \u0026\u0026 git commit -m \"Test: multi-session context in git notes\"\nResult: [main cf1e91a] Test: multi-session context in git notes",
+  "claude_version": "claude-sonnet-4-20250514"
+}
