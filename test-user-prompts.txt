@@ -1,0 +1,2 @@
+This is a test file to verify that user prompts are being captured in git notes.
+The updated JSONL parser should now properly extract user messages from the conversation transcript.
