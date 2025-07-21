@@ -98,6 +98,9 @@ This package includes several example hooks:
 ### User Prompt Submit
 - **Project Context**: Adds git branch and project type information
 
+### Notification
+- **Speech Notifications**: Uses macOS 'say' command to speak notifications aloud
+
 ## Testing Hooks
 
 Test individual hooks by piping JSON:

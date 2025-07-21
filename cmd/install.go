@@ -65,6 +65,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	fmt.Println("  • pre_tool_use: Validates bash commands and prevents sensitive file edits")
 	fmt.Println("  • post_tool_use: Logs tool usage and runs goimports on modified Go files")
 	fmt.Println("  • user_prompt_submit: Adds project context to prompts")
+	fmt.Println("  • notification: Speaks notifications aloud using macOS 'say' command")
 	fmt.Println("\nTo test: echo '{\"event\":\"pre_tool_use\",\"tool\":\"Bash\",\"tool_use_request\":{\"tool\":\"Bash\",\"parameters\":{\"command\":\"ls\"}}}' | hooks run")
 
 	return nil
