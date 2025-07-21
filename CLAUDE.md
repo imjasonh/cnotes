@@ -139,13 +139,16 @@ git log --show-notes=claude-conversations --oneline
 - Commit context (command and git output)
 - Claude version information
 
-**Notes Preservation**:
+**Notes Management**:
 ```bash
+# View conversation notes in readable Markdown format
+./hooks notes show [commit]  # defaults to HEAD
+
+# List all commits with conversation notes
+./hooks notes list  
+
 # Backup all conversation notes
 ./hooks notes backup [filename]
-
-# List all commits with notes
-./hooks notes list  
 
 # Restore from backup after destructive operations
 ./hooks notes restore <filename>
