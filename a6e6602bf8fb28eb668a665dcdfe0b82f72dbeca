@@ -1,0 +1,12 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T13:38:34.159559-04:00",
+  "conversation_excerpt": "\nTool interactions since last commit:\n- Bash: rm test-dedup.txt \u0026\u0026 git add test-dedup.txt \u0026\u0026 git commit -m \"Test: debug timestamp filtering\" 2\u003e...\n- Bash: git notes --ref=claude-conversations show HEAD | jq -r '.conversation_excerpt' | grep -A2 \"User p...\n- Bash: ./cnotes show HEAD | grep -A5 -B5 \"Tool interactions\"\n- Edit: [REDACTED].go\n- Edit: /Users/jason/git/hooks/cmd/root.go\n- TodoWrite: {\"todos\":[{\"content\":\"Remove all hook handler code (pretooluse, posttooluse, etc.)\",\"id\":\"1\",\"pri...\n- Bash: git add -A \u0026\u0026 git commit -m \"Fix duplicate content in git notes by filtering since last commit\n\n-...",
+  "tools_used": [
+    "Bash",
+    "Edit",
+    "TodoWrite"
+  ],
+  "commit_context": "Git command: git add -A \u0026\u0026 git commit -m \"Fix duplicate content in git notes by filtering since last commit\n\n- Add ExtractContextSince method to filter conversation by timestamp\n- Get previous commit time and only include activity since then\n- Change labels to 'User prompts since last commit' and 'Tool interactions since last commit'\n- Each commit now only captures its own unique conversation context\n- Prevents accumulation of duplicate content across commits in same session\"\nResult: [main a6e6602] Fix duplicate content in git notes by filtering since last commit",
+  "claude_version": "claude-sonnet-4-20250514"
+}
