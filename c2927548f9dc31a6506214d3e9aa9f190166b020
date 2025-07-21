@@ -1,0 +1,12 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T14:36:29.061733-04:00",
+  "conversation_excerpt": "Tool (Edit): /Users/jason/git/hooks/README.md\n\nTool (Bash): git add README.md \u0026\u0026 git commit -m \"Test conversational format in git notes\"\n\nTool (Bash): ./cnotes show\n\nClaude: Excellent! The conversational format is now working. I can see:\n- User prompts are properly captured and shown in bold\n- Tool uses are shown with code blocks\n- Claude's responses are included\n- Eve...\n\nTool (Edit): /Users/jason/git/hooks/README.md\n\nTool (TodoWrite): {\"todos\":[{\"content\":\"Remove all hook handler code (pretooluse, posttooluse, etc.)\",\"id\":\"1\",\"priority\":\"high\",\"status\":\"completed\"},{\"content\":\"Re...\n\nTool (Bash): git add -A \u0026\u0026 git commit -m \"Complete conversational flow redesign for cnotes show\"",
+  "tools_used": [
+    "Bash",
+    "Edit",
+    "TodoWrite"
+  ],
+  "commit_context": "Git command: git add -A \u0026\u0026 git commit -m \"Complete conversational flow redesign for cnotes show\"\nResult: [main c292754] Complete conversational flow redesign for cnotes show",
+  "claude_version": "claude-sonnet-4-20250514"
+}
