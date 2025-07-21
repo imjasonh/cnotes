@@ -1,0 +1,11 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T14:03:35.622019-04:00",
+  "conversation_excerpt": "\nTool interactions since last commit:\n- Bash: git add -A \u0026\u0026 git commit -m \"Fix user prompt parsing to handle string content format\n\n- Add suppo...\n- Bash: ./cnotes show | grep -A10 \"User prompts\"\n- Edit: /Users/jason/git/hooks/cmd/root.go\n- Bash: go build -o cnotes \u0026\u0026 cp cnotes /Users/jason/go/bin/cnotes \u0026\u0026 git add -A \u0026\u0026 git commit -m \"Add sm...",
+  "tools_used": [
+    "Bash",
+    "Edit"
+  ],
+  "commit_context": "Git command: go build -o cnotes \u0026\u0026 cp cnotes /Users/jason/go/bin/cnotes \u0026\u0026 git add -A \u0026\u0026 git commit -m \"Add small delay to ensure transcript is written before parsing\n\n- Add 100ms delay before reading transcript\n- Ensures user prompts are captured even if transcript writing is async\n- Should fix issue where user prompts weren't appearing in git notes\"\nResult: [main def9a33] Add small delay to ensure transcript is written before parsing",
+  "claude_version": "claude-sonnet-4-20250514"
+}
