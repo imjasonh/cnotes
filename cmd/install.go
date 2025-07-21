@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/imjasonh/cnotes/internal/config"
 	"github.com/spf13/cobra"
@@ -64,6 +65,21 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	} else {
 		settingsPath = config.GetProjectSettingsPath()
 		scope = "project"
+	}
+
+	// Prevent installation from temporary directories (unless uninstalling)
+	if !uninstall {
+		tempDir := os.TempDir()
+		// Resolve any symlinks in the executable path for comparison
+		realExecutable, err := filepath.EvalSymlinks(executable)
+		if err != nil {
+			realExecutable = executable // Fall back to original if can't resolve
+		}
+		
+		// Check if executable is in temp directory
+		if strings.HasPrefix(realExecutable, tempDir) || strings.HasPrefix(executable, "/tmp/") {
+			return fmt.Errorf("cannot install from temporary directory: %s\nPlease build and install cnotes properly:\n  go install && cnotes install", executable)
+		}
 	}
 
 	if uninstall {
