@@ -1,0 +1,13 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T14:02:59.158119-04:00",
+  "conversation_excerpt": "\nTool interactions since last commit:\n- Bash: rm test-prompt.txt \u0026\u0026 echo \"Another test\" \u003e test-prompt.txt \u0026\u0026 git add test-prompt.txt \u0026\u0026 git com...\n- Bash: git notes --ref=claude-conversations show HEAD | jq '.conversation_excerpt' | head -20\n- Bash: grep \"I would expect\" /Users/jason/.claude/projects/-Users-jason-git-hooks/74f50245-6c21-42b6-8df...\n- Bash: date -d \"2025-07-21T17:58:54.512Z\" +\"%Y-%m-%d %H:%M:%S %Z\"\n- Bash: echo \"2025-07-21T17:58:54.512Z is 13:58:54 EDT\"\n- Edit: [REDACTED].go\n- Read: /Users/jason/git/hooks/cmd/root.go\n- Read: [REDACTED].go\n- Bash: rm test-prompt.txt\n- Write: /Users/jason/git/hooks/debug-test.go\n- Bash: go run debug-test.go\n- Read: [REDACTED].go\n- Bash: rm debug-test.go\n- Bash: git add -A \u0026\u0026 git commit -m \"Fix user prompt parsing to handle string content format\n\n- Add suppo...",
+  "tools_used": [
+    "Bash",
+    "Edit",
+    "Read",
+    "Write"
+  ],
+  "commit_context": "Git command: git add -A \u0026\u0026 git commit -m \"Fix user prompt parsing to handle string content format\n\n- Add support for message.content as direct string (not just array format)\n- Handles both old and new transcript formats from Claude\n- User prompts like 'I would expect cnotes show to include my user prompt' now captured correctly\"\nResult: [main f748232] Fix user prompt parsing to handle string content format",
+  "claude_version": "claude-sonnet-4-20250514"
+}
