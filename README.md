@@ -4,6 +4,8 @@
 
 ⭐️ `cnotes` is pronounced like 💵 c-notes or 🏊 [_cenotes_](https://en.wikipedia.org/wiki/Cenote)
 
+Test: This edit is to debug missing user prompts in git notes.
+
 ## Quick Start
 
 ```bash
