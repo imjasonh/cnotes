@@ -2,7 +2,7 @@
 
 **cnotes** automatically captures Claude conversation context in git notes, making it easy to understand the development history and reasoning behind each commit.
 
-_`cnotes` is pronounced like 💵 c-notes or 🏊 _cenotes_`
+⭐️ `cnotes` is pronounced like 💵 c-notes or 🏊 [_cenotes_](https://en.wikipedia.org/wiki/Cenote)
 
 ## Quick Start
 
