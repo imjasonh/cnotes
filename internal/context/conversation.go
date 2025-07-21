@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -16,6 +17,15 @@ type ConversationContext struct {
 	UserPrompts      []string          `json:"user_prompts"`
 	ClaudeResponses  []string          `json:"claude_responses"`
 	ToolInteractions []ToolInteraction `json:"tool_interactions"`
+	Events           []ConversationEvent `json:"events"` // New: chronological events
+}
+
+// ConversationEvent represents any event in the conversation
+type ConversationEvent struct {
+	Timestamp time.Time `json:"timestamp"`
+	Type      string    `json:"type"` // "user", "assistant", "tool", "system"
+	Content   string    `json:"content"`
+	ToolName  string    `json:"tool_name,omitempty"`
 }
 
 // ToolInteraction represents a tool use and its result
@@ -67,6 +77,7 @@ func (ce *ContextExtractor) ExtractContextSince(transcriptPath string, sessionID
 		UserPrompts:      []string{},
 		ClaudeResponses:  []string{},
 		ToolInteractions: []ToolInteraction{},
+		Events:           []ConversationEvent{},
 	}
 
 	// Read all transcript files in the directory
@@ -92,6 +103,7 @@ func (ce *ContextExtractor) ExtractContextSince(transcriptPath string, sessionID
 		combinedContext.UserPrompts = append(combinedContext.UserPrompts, context.UserPrompts...)
 		combinedContext.ClaudeResponses = append(combinedContext.ClaudeResponses, context.ClaudeResponses...)
 		combinedContext.ToolInteractions = append(combinedContext.ToolInteractions, context.ToolInteractions...)
+		combinedContext.Events = append(combinedContext.Events, context.Events...)
 	}
 
 	// Apply privacy filters
@@ -125,6 +137,7 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 		UserPrompts:      []string{},
 		ClaudeResponses:  []string{},
 		ToolInteractions: []ToolInteraction{},
+		Events:           []ConversationEvent{},
 	}
 
 	lines := strings.Split(content, "\n")
@@ -150,14 +163,15 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 			}
 		}
 
+		// Extract timestamp
+		var entryTime time.Time
+		if timestampStr, ok := entry["timestamp"].(string); ok {
+			entryTime, _ = time.Parse(time.RFC3339, timestampStr)
+		}
+		
 		// Filter by timestamp if provided
-		if !since.IsZero() {
-			if timestampStr, ok := entry["timestamp"].(string); ok {
-				entryTime, err := time.Parse(time.RFC3339, timestampStr)
-				if err == nil && entryTime.Before(since) {
-					continue // Skip entries before the cutoff
-				}
-			}
+		if !since.IsZero() && !entryTime.IsZero() && entryTime.Before(since) {
+			continue // Skip entries before the cutoff
 		}
 
 		// Extract based on type
@@ -172,6 +186,12 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 					// Direct string content
 					if !strings.Contains(content, "[Request interrupted by user") {
 						context.UserPrompts = append(context.UserPrompts, content)
+						// Add to events
+						context.Events = append(context.Events, ConversationEvent{
+							Timestamp: entryTime,
+							Type:      "user",
+							Content:   content,
+						})
 					}
 				} else if contentArray, ok := msg["content"].([]interface{}); ok {
 					// Array of content objects
@@ -181,6 +201,12 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 								// Skip system messages about interruptions
 								if !strings.Contains(text, "[Request interrupted by user") {
 									context.UserPrompts = append(context.UserPrompts, text)
+									// Add to events
+									context.Events = append(context.Events, ConversationEvent{
+										Timestamp: entryTime,
+										Type:      "user",
+										Content:   text,
+									})
 								}
 							}
 						}
@@ -189,14 +215,30 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 			}
 			
 		case "assistant":
-			// Extract tool uses from assistant messages
+			// Extract tool uses and text responses from assistant messages
 			if msg, ok := entry["message"].(map[string]interface{}); ok {
 				if content, ok := msg["content"].([]interface{}); ok {
 					for _, c := range content {
-						if toolUse, ok := c.(map[string]interface{}); ok {
-							if toolUse["type"] == "tool_use" {
-								toolName, _ := toolUse["name"].(string)
-								if input, ok := toolUse["input"].(map[string]interface{}); ok {
+						if contentItem, ok := c.(map[string]interface{}); ok {
+							contentType, _ := contentItem["type"].(string)
+							
+							switch contentType {
+							case "text":
+								// Assistant text response
+								if text, ok := contentItem["text"].(string); ok && text != "" {
+									context.ClaudeResponses = append(context.ClaudeResponses, text)
+									// Add to events
+									context.Events = append(context.Events, ConversationEvent{
+										Timestamp: entryTime,
+										Type:      "assistant",
+										Content:   text,
+									})
+								}
+							
+							case "tool_use":
+								// Tool use
+								toolName, _ := contentItem["name"].(string)
+								if input, ok := contentItem["input"].(map[string]interface{}); ok {
 									interaction := ToolInteraction{
 										Tool: toolName,
 									}
@@ -228,11 +270,41 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 									
 									if interaction.Input != "" {
 										context.ToolInteractions = append(context.ToolInteractions, interaction)
+										// Add to events
+										context.Events = append(context.Events, ConversationEvent{
+											Timestamp: entryTime,
+											Type:      "tool",
+											Content:   interaction.Input,
+											ToolName:  toolName,
+										})
 									}
 								}
 							}
 						}
 					}
+				}
+			}
+		
+		case "tool_result":
+			// Extract tool results
+			if result, ok := entry["result"].(map[string]interface{}); ok {
+				var resultContent string
+				toolName, _ := entry["tool_name"].(string)
+				
+				if stdout, ok := result["stdout"].(string); ok && stdout != "" {
+					resultContent = stdout
+				} else if output, ok := result["output"].(string); ok && output != "" {
+					resultContent = output
+				}
+				
+				if resultContent != "" {
+					// Add to events
+					context.Events = append(context.Events, ConversationEvent{
+						Timestamp: entryTime,
+						Type:      "tool_result",
+						Content:   resultContent,
+						ToolName:  toolName,
+					})
 				}
 			}
 		}
@@ -273,32 +345,58 @@ func (ce *ContextExtractor) sanitizeText(text string) string {
 
 // CreateExcerpt creates a concise excerpt from conversation context
 func (ce *ContextExtractor) CreateExcerpt(context *ConversationContext) string {
+	// Sort events by timestamp
+	sort.Slice(context.Events, func(i, j int) bool {
+		return context.Events[i].Timestamp.Before(context.Events[j].Timestamp)
+	})
+
 	var parts []string
-
-	// Include all user prompts (they're already filtered by time)
-	if len(context.UserPrompts) > 0 {
-		parts = append(parts, "User prompts since last commit:")
-		for _, prompt := range context.UserPrompts {
-			if len(prompt) > 300 {
-				prompt = prompt[:297] + "..."
+	for _, event := range context.Events {
+		var line string
+		
+		switch event.Type {
+		case "user":
+			// Format user prompts
+			content := event.Content
+			if len(content) > 200 {
+				content = content[:197] + "..."
 			}
-			parts = append(parts, fmt.Sprintf("- %s", prompt))
+			line = fmt.Sprintf("User: %s", content)
+			
+		case "assistant":
+			// Format assistant responses
+			content := event.Content
+			if len(content) > 200 {
+				content = content[:197] + "..."
+			}
+			line = fmt.Sprintf("Claude: %s", content)
+			
+		case "tool":
+			// Format tool uses
+			content := event.Content
+			if len(content) > 150 {
+				content = content[:147] + "..."
+			}
+			line = fmt.Sprintf("Tool (%s): %s", event.ToolName, content)
+			
+		case "tool_result":
+			// Format tool results - show abbreviated output
+			content := event.Content
+			lines := strings.Split(content, "\n")
+			if len(lines) > 3 {
+				content = strings.Join(lines[:3], "\n") + "\n[...]"
+			} else if len(content) > 150 {
+				content = content[:147] + "..."
+			}
+			line = fmt.Sprintf("Result: %s", content)
+		}
+		
+		if line != "" {
+			parts = append(parts, line)
 		}
 	}
 
-	// Include all tool interactions (they're already filtered by time)
-	if len(context.ToolInteractions) > 0 {
-		parts = append(parts, "\nTool interactions since last commit:")
-		for _, interaction := range context.ToolInteractions {
-			input := interaction.Input
-			if len(input) > 100 {
-				input = input[:97] + "..."
-			}
-			parts = append(parts, fmt.Sprintf("- %s: %s", interaction.Tool, input))
-		}
-	}
-
-	excerpt := strings.Join(parts, "\n")
+	excerpt := strings.Join(parts, "\n\n")
 
 	// Truncate if too long
 	if len(excerpt) > ce.maxExcerptLength {

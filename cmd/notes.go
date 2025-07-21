@@ -151,15 +151,9 @@ func printConversationMarkdown(note notes.ConversationNote, commit string) {
 	fmt.Printf("**Claude Version:** %s\n", note.ClaudeVersion)
 	fmt.Printf("**Tools Used:** %s\n\n", strings.Join(note.ToolsUsed, ", "))
 
-	// Commit context
-	if note.CommitContext != "" {
-		fmt.Printf("## Commit Context\n\n")
-		fmt.Printf("```\n%s\n```\n\n", note.CommitContext)
-	}
-
-	// Conversation excerpt
+	// Conversation transcript
 	if note.ConversationExcerpt != "" {
-		fmt.Printf("## Conversation Context\n\n")
+		fmt.Printf("## Conversation Transcript\n\n")
 		// Clean up and format the conversation excerpt for better readability
 		formatted := formatConversationExcerpt(note.ConversationExcerpt)
 		fmt.Printf("%s\n\n", formatted)
@@ -188,8 +182,58 @@ func formatConversationExcerpt(excerpt string) string {
 	for strings.Contains(formatted, "\n\n\n") {
 		formatted = strings.ReplaceAll(formatted, "\n\n\n", "\n\n")
 	}
+	
+	// Format different message types for better visual distinction
+	lines := strings.Split(formatted, "\n")
+	var formattedLines []string
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			formattedLines = append(formattedLines, "")
+			continue
+		}
+		
+		switch {
+		case strings.HasPrefix(line, "User:"):
+			// Bold user prompts
+			formattedLines = append(formattedLines, "**"+line+"**")
+			
+		case strings.HasPrefix(line, "Claude:"):
+			// Keep Claude responses as-is
+			formattedLines = append(formattedLines, line)
+			
+		case strings.HasPrefix(line, "Tool ("):
+			// Format tool uses in code blocks
+			toolParts := strings.SplitN(line, ": ", 2)
+			if len(toolParts) == 2 {
+				formattedLines = append(formattedLines, toolParts[0]+":")
+				formattedLines = append(formattedLines, "```")
+				formattedLines = append(formattedLines, toolParts[1])
+				formattedLines = append(formattedLines, "```")
+			} else {
+				formattedLines = append(formattedLines, line)
+			}
+			
+		case strings.HasPrefix(line, "Result:"):
+			// Format results in code blocks
+			resultParts := strings.SplitN(line, ": ", 2)
+			if len(resultParts) == 2 {
+				formattedLines = append(formattedLines, "_"+resultParts[0]+":_")
+				formattedLines = append(formattedLines, "```")
+				formattedLines = append(formattedLines, resultParts[1])
+				formattedLines = append(formattedLines, "```")
+			} else {
+				formattedLines = append(formattedLines, line)
+			}
+			
+		default:
+			// Handle multi-line content that might be part of a previous block
+			formattedLines = append(formattedLines, line)
+		}
+	}
 
-	return strings.TrimSpace(formatted)
+	return strings.Join(formattedLines, "\n")
 }
 
 // getCommitInfo returns formatted commit information
