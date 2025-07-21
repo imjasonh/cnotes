@@ -1,0 +1,1 @@
+# Test stdout parsing
