@@ -1,0 +1,15 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T13:36:39.116136-04:00",
+  "conversation_excerpt": "\nTool interactions since last commit:\n- Bash: git add README.md \u0026\u0026 git commit -m \"Improve pronunciation guide in README\n\n- Add star emoji for e...\n- Bash: git push\n- Bash: git notes --ref=claude-conversations show HEAD | jq -r '.conversation_excerpt' | head -50\n- Bash: git notes --ref=claude-conversations show HEAD~1 | jq -r '.conversation_excerpt' | head -30\n- Read: [REDACTED].go\n- Edit: [REDACTED].go\n- Read: [REDACTED].go\n- TodoWrite: {\"todos\":[{\"content\":\"Remove all hook handler code (pretooluse, posttooluse, etc.)\",\"id\":\"1\",\"pri...\n- Bash: head -5 /Users/jason/.claude/projects/-Users-jason-git-hooks/74f50245-6c21-42b6-8dfe-9b83ba8876fb...\n- Read: /Users/jason/git/hooks/cmd/root.go\n- Edit: [REDACTED].go\n- Edit: [REDACTED].go\n- Edit: [REDACTED].go\n- Edit: [REDACTED].go\n- Edit: [REDACTED].go\n- Edit: /Users/jason/git/hooks/cmd/root.go\n- Edit: /Users/jason/git/hooks/cmd/root.go\n- Bash: go build -o cnotes \u0026\u0026 cp cnotes /Users/jason/go/bin/cnotes\n- Read: [REDACTED]_notes.go\n- Grep: {\"output_mode\":\"content\",\"path\":\"/Users/jason/git/hooks/internal/notes\",\"pattern\":\"func.*List\"}\n- Grep: {\"output_mode\":\"content\",\"path\":\"[REDACTED]_notes.go\",\"pattern\":\"^func \\\\(nm \\\\*NotesManager\\\\)\"}\n- Grep: {\"output_mode\":\"files_with_matches\",\"path\":\"/Users/jason/git/hooks\",\"pattern\":\"listNotes\"}\n- Read: /Users/jason/git/hooks/cmd/notes.go\n- Grep: {\"-A\":10,\"-B\":10,\"output_mode\":\"content\",\"path\":\"/Users/jason/git/hooks/cmd/notes.go\",\"pattern\":\"...\n- Edit: /Users/jason/git/hooks/cmd/root.go\n- Edit: /Users/jason/git/hooks/cmd/root.go\n- Bash: go build -o cnotes \u0026\u0026 cp cnotes /Users/jason/go/bin/cnotes\n- Write: /Users/jason/git/hooks/test-dedup.txt\n- Bash: git add test-dedup.txt \u0026\u0026 git commit -m \"Test: conversation context deduplication\"",
+  "tools_used": [
+    "Bash",
+    "Read",
+    "Edit",
+    "TodoWrite",
+    "Grep",
+    "Write"
+  ],
+  "commit_context": "Git command: git add test-dedup.txt \u0026\u0026 git commit -m \"Test: conversation context deduplication\"\nResult: [main 8e8e2d8] Test: conversation context deduplication",
+  "claude_version": "claude-sonnet-4-20250514"
+}
