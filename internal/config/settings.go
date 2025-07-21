@@ -106,38 +106,28 @@ func InstallHooksToPath(binaryPath, settingsPath string) error {
 		Hooks:   []HookAction{hookAction},
 	}
 
-	// Map our event names to Claude's event names
-	eventMap := map[string]string{
-		"pre_tool_use":       "PreToolUse",
-		"post_tool_use":      "PostToolUse",
-		"user_prompt_submit": "UserPromptSubmit",
-		"stop":               "Stop",
-		"subagent_stop":      "SubagentStop",
-		"notification":       "Notification",
-		"pre_compact":        "PreCompact",
-	}
+	// Only register for PostToolUse events since that's all we handle
+	claudeEvent := "PostToolUse"
 
-	for _, claudeEvent := range eventMap {
-		// Check if our hook is already installed
-		found := false
-		for i, def := range settings.Hooks[claudeEvent] {
-			for j, action := range def.Hooks {
-				if action.Command == binaryPath {
-					// Update existing hook
-					settings.Hooks[claudeEvent][i].Hooks[j] = hookAction
-					found = true
-					break
-				}
-			}
-			if found {
+	// Check if our hook is already installed
+	found := false
+	for i, def := range settings.Hooks[claudeEvent] {
+		for j, action := range def.Hooks {
+			if action.Command == binaryPath {
+				// Update existing hook
+				settings.Hooks[claudeEvent][i].Hooks[j] = hookAction
+				found = true
 				break
 			}
 		}
-
-		if !found {
-			// Add new hook
-			settings.Hooks[claudeEvent] = append(settings.Hooks[claudeEvent], hookDef)
+		if found {
+			break
 		}
+	}
+
+	if !found {
+		// Add new hook
+		settings.Hooks[claudeEvent] = append(settings.Hooks[claudeEvent], hookDef)
 	}
 
 	return SaveSettings(settingsPath, settings)

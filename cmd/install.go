@@ -26,7 +26,7 @@ Use --local for local directory settings (./.claude/settings.json).
 
 This command will:
 1. Find or create the appropriate settings.json file
-2. Add cnotes to handle PostToolUse events for Bash commands
+2. Add cnotes to handle PostToolUse events for Bash commands containing git commits
 3. Configure git to preserve notes during rebases
 
 Use --uninstall to remove cnotes from Claude settings.`,
@@ -70,28 +70,28 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	// Prevent installation from temporary directories (unless uninstalling)
 	if !uninstall {
 		tempDir := os.TempDir()
-		
+
 		// Resolve any symlinks in the executable path for comparison
 		realExecutable, err := filepath.EvalSymlinks(executable)
 		if err != nil {
 			realExecutable = executable // Fall back to original if can't resolve
 		}
-		
+
 		// Also resolve tempDir in case it's a symlink (like /tmp on macOS)
 		realTempDir, err := filepath.EvalSymlinks(tempDir)
 		if err != nil {
 			realTempDir = tempDir
 		}
-		
+
 		// Check if executable is in temp directory or is from go run
-		if strings.HasPrefix(realExecutable, tempDir) || 
-		   strings.HasPrefix(executable, tempDir) ||
-		   strings.HasPrefix(realExecutable, realTempDir) ||
-		   strings.HasPrefix(executable, realTempDir) ||
-		   strings.Contains(executable, "/go-build/") ||
-		   strings.Contains(realExecutable, "/go-build/") ||
-		   strings.Contains(executable, "/Caches/go-build/") ||
-		   strings.Contains(realExecutable, "/Caches/go-build/") {
+		if strings.HasPrefix(realExecutable, tempDir) ||
+			strings.HasPrefix(executable, tempDir) ||
+			strings.HasPrefix(realExecutable, realTempDir) ||
+			strings.HasPrefix(executable, realTempDir) ||
+			strings.Contains(executable, "/go-build/") ||
+			strings.Contains(realExecutable, "/go-build/") ||
+			strings.Contains(executable, "/Caches/go-build/") ||
+			strings.Contains(realExecutable, "/Caches/go-build/") {
 			return fmt.Errorf("cannot install from temporary directory: %s\nPlease build and install cnotes properly:\n  go install && cnotes install", executable)
 		}
 	}
