@@ -42,5 +42,5 @@ func LogToolUsage(ctx context.Context, input hooks.HookInput) (hooks.HookOutput,
 			"timestamp", time.Now().Unix())
 	}
 
-	return hooks.HookOutput{Decision: "continue"}, nil
+	return hooks.HookOutput{Decision: "approve"}, nil
 }

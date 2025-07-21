@@ -6,20 +6,26 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
 	"github.com/imjasonh/hooks/internal/config"
+	"github.com/spf13/cobra"
 )
 
 var (
-	uninstall bool
+	uninstall  bool
+	global     bool
+	local      bool
 	installCmd = &cobra.Command{
 		Use:   "install",
 		Short: "Install hooks to Claude settings",
 		Long: `Install this binary as a hook handler in your Claude settings.
 
+By default, installs to project settings (.claude/settings.json in current directory).
+Use --global for user settings (~/.claude/settings.json).
+Use --local for local directory settings (./.claude/settings.json).
+
 This command will:
-1. Find or create ~/.claude/settings.json
-2. Add this binary to handle all hook events
+1. Find or create the appropriate settings.json file
+2. Add this binary to handle all hook events  
 3. Configure it to match all tools
 
 Use --uninstall to remove the hooks.`,
@@ -30,6 +36,9 @@ Use --uninstall to remove the hooks.`,
 func init() {
 	rootCmd.AddCommand(installCmd)
 	installCmd.Flags().BoolVar(&uninstall, "uninstall", false, "Remove hooks from Claude settings")
+	installCmd.Flags().BoolVar(&global, "global", false, "Install to global settings (~/.claude/settings.json)")
+	installCmd.Flags().BoolVar(&local, "local", false, "Install to local settings (./.claude/settings.json)")
+	installCmd.MarkFlagsMutuallyExclusive("global", "local")
 }
 
 func runInstall(cmd *cobra.Command, args []string) error {
@@ -43,31 +52,42 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
+	// Determine settings path based on flags
+	var settingsPath string
+	var scope string
+	if global {
+		settingsPath = config.GetGlobalSettingsPath()
+		scope = "global"
+	} else if local {
+		settingsPath = config.GetLocalSettingsPath()
+		scope = "local"
+	} else {
+		settingsPath = config.GetProjectSettingsPath()
+		scope = "project"
+	}
+
 	if uninstall {
-		slog.Info("uninstalling hooks", "binary", executable)
-		if err := config.UninstallHooks(executable); err != nil {
+		slog.Info("uninstalling hooks", "binary", executable, "scope", scope)
+		if err := config.UninstallHooksFromPath(executable, settingsPath); err != nil {
 			return fmt.Errorf("failed to uninstall hooks: %w", err)
 		}
-		fmt.Println("✓ Hooks uninstalled successfully")
+		fmt.Printf("✓ Hooks uninstalled successfully from %s settings\n", scope)
 		return nil
 	}
 
-	slog.Info("installing hooks", "binary", executable)
-	if err := config.InstallHooks(executable); err != nil {
+	slog.Info("installing hooks", "binary", executable, "scope", scope)
+	if err := config.InstallHooksToPath(executable, settingsPath); err != nil {
 		return fmt.Errorf("failed to install hooks: %w", err)
 	}
 
-	settingsPath := config.GetSettingsPath()
-	fmt.Printf("✓ Hooks installed successfully\n")
+	fmt.Printf("✓ Hooks installed successfully to %s settings\n", scope)
 	fmt.Printf("  Binary: %s\n", executable)
 	fmt.Printf("  Settings: %s\n", settingsPath)
 	fmt.Printf("\nThe following hooks are now active:\n")
 	fmt.Println("  • pre_tool_use: Validates bash commands and prevents sensitive file edits")
 	fmt.Println("  • post_tool_use: Logs tool usage and runs goimports on modified Go files")
 	fmt.Println("  • user_prompt_submit: Adds project context to prompts")
-	fmt.Println("  • notification: Shows notifications and speaks them aloud (macOS)")
-	fmt.Println("\nOptional: Install terminal-notifier for visual notifications:")
-	fmt.Println("  brew install terminal-notifier")
+	fmt.Println("  • notification: Speaks notifications aloud (macOS)")
 	fmt.Println("\nTo test: echo '{\"event\":\"pre_tool_use\",\"tool\":\"Bash\",\"tool_use_request\":{\"tool\":\"Bash\",\"parameters\":{\"command\":\"ls\"}}}' | hooks run")
 
 	return nil

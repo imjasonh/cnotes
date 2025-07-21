@@ -8,13 +8,18 @@ import (
 )
 
 type Settings struct {
-	Hooks []Hook `json:"hooks"`
+	Hooks map[string][]HookDefinition `json:"hooks"`
 }
 
-type Hook struct {
-	Events   []string `json:"events"`
-	Matchers []string `json:"matchers"`
-	Cmds     []string `json:"cmds"`
+type HookDefinition struct {
+	Matcher string       `json:"matcher"`
+	Hooks   []HookAction `json:"hooks"`
+}
+
+type HookAction struct {
+	Type    string `json:"type"`
+	Command string `json:"command"`
+	Timeout int    `json:"timeout,omitempty"`
 }
 
 func LoadSettings(path string) (*Settings, error) {
@@ -53,74 +58,133 @@ func SaveSettings(path string, settings *Settings) error {
 }
 
 func GetSettingsPath() string {
+	return GetGlobalSettingsPath()
+}
+
+func GetGlobalSettingsPath() string {
 	if path := os.Getenv("CLAUDE_SETTINGS_PATH"); path != "" {
 		return path
 	}
-	
+
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return ""
 	}
-	
+
 	return filepath.Join(home, ".claude", "settings.json")
 }
 
+func GetLocalSettingsPath() string {
+	return filepath.Join(".", ".claude", "settings.local.json")
+}
+
+func GetProjectSettingsPath() string {
+	return filepath.Join(".", ".claude", "settings.json")
+}
+
 func InstallHooks(binaryPath string) error {
-	settingsPath := GetSettingsPath()
+	return InstallHooksToPath(binaryPath, GetSettingsPath())
+}
+
+func InstallHooksToPath(binaryPath, settingsPath string) error {
 	settings, err := LoadSettings(settingsPath)
 	if err != nil {
 		return err
 	}
 
+	if settings.Hooks == nil {
+		settings.Hooks = make(map[string][]HookDefinition)
+	}
+
 	hookCmd := binaryPath + " run"
-	
-	allEvents := []string{
-		"pre_tool_use",
-		"post_tool_use", 
-		"user_prompt_submit",
-		"stop",
-		"subagent_stop",
-		"notification",
-		"pre_compact",
+	hookAction := HookAction{
+		Type:    "command",
+		Command: hookCmd,
 	}
 
-	found := false
-	for i, hook := range settings.Hooks {
-		if len(hook.Cmds) > 0 && hook.Cmds[0] == hookCmd {
-			settings.Hooks[i].Events = allEvents
-			settings.Hooks[i].Matchers = []string{".*"}
-			found = true
-			break
+	hookDef := HookDefinition{
+		Matcher: ".*",
+		Hooks:   []HookAction{hookAction},
+	}
+
+	// Map our event names to Claude's event names
+	eventMap := map[string]string{
+		"pre_tool_use":       "PreToolUse",
+		"post_tool_use":      "PostToolUse",
+		"user_prompt_submit": "UserPromptSubmit",
+		"stop":               "Stop",
+		"subagent_stop":      "SubagentStop",
+		"notification":       "Notification",
+		"pre_compact":        "PreCompact",
+	}
+
+	for _, claudeEvent := range eventMap {
+		// Check if our hook is already installed
+		found := false
+		for i, def := range settings.Hooks[claudeEvent] {
+			for j, action := range def.Hooks {
+				if action.Command == hookCmd {
+					// Update existing hook
+					settings.Hooks[claudeEvent][i].Hooks[j] = hookAction
+					found = true
+					break
+				}
+			}
+			if found {
+				break
+			}
 		}
-	}
 
-	if !found {
-		settings.Hooks = append(settings.Hooks, Hook{
-			Events:   allEvents,
-			Matchers: []string{".*"},
-			Cmds:     []string{hookCmd},
-		})
+		if !found {
+			// Add new hook
+			settings.Hooks[claudeEvent] = append(settings.Hooks[claudeEvent], hookDef)
+		}
 	}
 
 	return SaveSettings(settingsPath, settings)
 }
 
 func UninstallHooks(binaryPath string) error {
-	settingsPath := GetSettingsPath()
+	return UninstallHooksFromPath(binaryPath, GetSettingsPath())
+}
+
+func UninstallHooksFromPath(binaryPath, settingsPath string) error {
 	settings, err := LoadSettings(settingsPath)
 	if err != nil {
 		return err
 	}
 
+	if settings.Hooks == nil {
+		return nil
+	}
+
 	hookCmd := binaryPath + " run"
-	filtered := make([]Hook, 0)
-	
-	for _, hook := range settings.Hooks {
-		if len(hook.Cmds) == 0 || hook.Cmds[0] != hookCmd {
-			filtered = append(filtered, hook)
+
+	// Remove our hook from all events
+	for eventName, hookDefs := range settings.Hooks {
+		newDefs := make([]HookDefinition, 0)
+
+		for _, def := range hookDefs {
+			newActions := make([]HookAction, 0)
+			for _, action := range def.Hooks {
+				if action.Command != hookCmd {
+					newActions = append(newActions, action)
+				}
+			}
+
+			// Only keep the definition if it still has actions
+			if len(newActions) > 0 {
+				def.Hooks = newActions
+				newDefs = append(newDefs, def)
+			}
+		}
+
+		if len(newDefs) > 0 {
+			settings.Hooks[eventName] = newDefs
+		} else {
+			delete(settings.Hooks, eventName)
 		}
 	}
 
-	settings.Hooks = filtered
 	return SaveSettings(settingsPath, settings)
 }

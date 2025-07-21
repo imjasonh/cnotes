@@ -4,51 +4,68 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"strings"
 
 	"github.com/imjasonh/hooks/internal/hooks"
 )
 
-var dangerousCommands = []string{
-	"rm -rf /",
-	"rm -rf /*",
-	":(){ :|:& };:",
-	"mkfs.",
-	"dd if=/dev/zero",
-	"> /dev/sda",
-	"wget http",
-	"curl http",
+type DangerousPattern struct {
+	Pattern     *regexp.Regexp
+	Description string
+}
+
+var dangerousPatterns = []DangerousPattern{
+	{regexp.MustCompile(`rm\s+-rf\s+/[^a-zA-Z]`), "recursive deletion of root filesystem"},
+	{regexp.MustCompile(`rm\s+-rf\s+/\*`), "recursive deletion of root filesystem contents"},
+	{regexp.MustCompile(`:\(\)\{\s*:\|\:&\s*\};\:`), "fork bomb"},
+	{regexp.MustCompile(`mkfs\.`), "filesystem formatting"},
+	{regexp.MustCompile(`dd\s+if=/dev/zero`), "disk wiping with dd"},
+	{regexp.MustCompile(`>\s*/dev/sd[a-z]`), "writing directly to disk device"},
+	{regexp.MustCompile(`wget\s+https?://`), "downloading files from internet"},
+	{regexp.MustCompile(`curl\s+https?://`), "downloading files from internet"},
+	{regexp.MustCompile(`chmod\s+\+x.*\.(sh|py|pl).*&&.*\./`), "download and execute pattern"},
+	{regexp.MustCompile(`sudo\s+rm\s+-rf`), "privileged recursive deletion"},
+	{regexp.MustCompile(`>/etc/passwd`), "overwriting system password file"},
+	{regexp.MustCompile(`>/etc/shadow`), "overwriting system shadow file"},
 }
 
 func ValidateBashCommand(ctx context.Context, input hooks.HookInput) (hooks.HookOutput, error) {
-	cmd, ok := input.ToolUseRequest.Parameters["command"].(string)
-	if !ok {
-		return hooks.HookOutput{Decision: "continue"}, nil
+	bashInput, err := input.GetBashInput()
+	if err != nil {
+		slog.Debug("no bash input found", "error", err)
+		return hooks.HookOutput{Decision: "approve"}, nil
 	}
 
-	for _, dangerous := range dangerousCommands {
-		if strings.Contains(cmd, dangerous) {
+	if bashInput.Command == "" {
+		return hooks.HookOutput{Decision: "approve"}, nil
+	}
+
+	// Check against dangerous patterns
+	for _, pattern := range dangerousPatterns {
+		if pattern.Pattern.MatchString(bashInput.Command) {
 			slog.Warn("blocked dangerous command",
-				"command", cmd,
-				"pattern", dangerous)
+				"command", bashInput.Command,
+				"reason", pattern.Description)
 			return hooks.HookOutput{
 				Decision: "block",
-				Reason:   fmt.Sprintf("Command contains dangerous pattern: %s", dangerous),
+				Reason:   fmt.Sprintf("Command blocked: %s", pattern.Description),
 			}, nil
 		}
 	}
 
-	if strings.Contains(cmd, "sudo") && !strings.Contains(cmd, "sudo -n") {
+	// Modify sudo commands to be non-interactive
+	if strings.Contains(bashInput.Command, "sudo") && !strings.Contains(bashInput.Command, "sudo -n") {
 		slog.Info("modifying sudo command to non-interactive")
 		return hooks.HookOutput{
-			Decision: "continue",
-			ModifiedParameters: map[string]interface{}{
-				"command": strings.ReplaceAll(cmd, "sudo", "sudo -n"),
+			Decision: "approve",
+			ModifiedParameters: map[string]any{
+				"command": strings.ReplaceAll(bashInput.Command, "sudo", "sudo -n"),
 			},
 		}, nil
 	}
 
-	return hooks.HookOutput{Decision: "continue"}, nil
+	return hooks.HookOutput{Decision: "approve"}, nil
 }
 
 var sensitiveFiles = []string{
@@ -62,23 +79,28 @@ var sensitiveFiles = []string{
 }
 
 func PreventSensitiveFileEdits(ctx context.Context, input hooks.HookInput) (hooks.HookOutput, error) {
-	path, ok := input.ToolUseRequest.Parameters["file_path"].(string)
-	if !ok {
-		return hooks.HookOutput{Decision: "continue"}, nil
+	fileInput, err := input.GetFileInput()
+	if err != nil {
+		slog.Debug("no file input found", "error", err)
+		return hooks.HookOutput{Decision: "approve"}, nil
 	}
 
-	lowerPath := strings.ToLower(path)
+	if fileInput.FilePath == "" {
+		return hooks.HookOutput{Decision: "approve"}, nil
+	}
+
+	lowerPath := strings.ToLower(fileInput.FilePath)
 	for _, sensitive := range sensitiveFiles {
 		if strings.Contains(lowerPath, strings.ToLower(sensitive)) {
 			slog.Warn("blocked sensitive file edit",
-				"file", path,
+				"file", fileInput.FilePath,
 				"pattern", sensitive)
 			return hooks.HookOutput{
 				Decision: "block",
-				Reason:   fmt.Sprintf("Cannot edit sensitive file: %s", path),
+				Reason:   fmt.Sprintf("Cannot edit sensitive file: %s", fileInput.FilePath),
 			}, nil
 		}
 	}
 
-	return hooks.HookOutput{Decision: "continue"}, nil
+	return hooks.HookOutput{Decision: "approve"}, nil
 }

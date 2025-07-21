@@ -18,59 +18,42 @@ func init() {
 func SpeakNotification(ctx context.Context, input hooks.HookInput) (hooks.HookOutput, error) {
 	// Only run on macOS
 	if runtime.GOOS != "darwin" {
-		return hooks.HookOutput{Decision: "continue"}, nil
+		return hooks.HookOutput{Decision: "approve"}, nil
 	}
 
-	// Build the notification content
-	var title, message, subtitle string
-	if input.Notification.Permission != "" {
-		// Permission request
-		title = "Claude Permission Request"
-		subtitle = fmt.Sprintf("Tool: %s", input.Notification.Tool)
+	// Build the notification content for speech
+	var message string
+
+	// Check if we have the direct message format (newer)
+	if input.Message != "" {
+		message = input.Message
+	} else if input.Notification.Permission != "" {
+		// Permission request (older format)
 		message = fmt.Sprintf("Requesting permission to %s", input.Notification.Message)
-	} else {
-		// Regular notification
-		title = "Claude Notification"
-		subtitle = fmt.Sprintf("Tool: %s", input.Notification.Tool)
+	} else if input.Notification.Message != "" {
+		// Regular notification (older format)
 		message = input.Notification.Message
-	}
-
-	// Show notification using terminal-notifier if available
-	if _, err := exec.LookPath("terminal-notifier"); err == nil {
-		args := []string{
-			"-title", title,
-			"-subtitle", subtitle,
-			"-message", message,
-			"-sound", "default",
-			"-group", "claude-hooks",
-		}
-		
-		cmd := exec.CommandContext(ctx, "terminal-notifier", args...)
-		if err := cmd.Start(); err != nil {
-			slog.Error("failed to show notification", "error", err)
-		} else {
-			// Don't wait for completion
-			go func() {
-				if err := cmd.Wait(); err != nil {
-					slog.Debug("terminal-notifier failed", "error", err)
-				}
-			}()
-			slog.Info("showed notification",
-				"tool", input.Notification.Tool,
-				"permission", input.Notification.Permission != "")
-		}
 	} else {
-		slog.Debug("terminal-notifier not found, install with: brew install terminal-notifier")
+		// No valid notification content
+		return hooks.HookOutput{Decision: "approve"}, nil
 	}
 
-	// Also speak the notification if say is available
+	// Speak the notification using macOS say command
 	if _, err := exec.LookPath("say"); err == nil {
-		spokenMessage := fmt.Sprintf("%s. %s", subtitle, message)
-		
+		// Build more informative spoken message
+		var spokenMessage string
+		if input.Notification.Permission != "" {
+			spokenMessage = fmt.Sprintf("Claude is requesting permission for %s: %s", input.Notification.Tool, message)
+		} else if input.Notification.Tool != "" {
+			spokenMessage = fmt.Sprintf("Claude notification from %s: %s", input.Notification.Tool, message)
+		} else {
+			spokenMessage = fmt.Sprintf("Claude notification: %s", message)
+		}
+
 		// Sanitize for speech
 		spokenMessage = strings.ReplaceAll(spokenMessage, "\n", " ")
 		spokenMessage = strings.ReplaceAll(spokenMessage, "\"", "'")
-		
+
 		// Truncate if too long
 		if len(spokenMessage) > 200 {
 			spokenMessage = spokenMessage[:197] + "..."
@@ -86,8 +69,11 @@ func SpeakNotification(ctx context.Context, input hooks.HookInput) (hooks.HookOu
 					slog.Debug("say command failed", "error", err)
 				}
 			}()
+			slog.Info("spoke notification",
+				"tool", input.Notification.Tool,
+				"permission", input.Notification.Permission != "")
 		}
 	}
 
-	return hooks.HookOutput{Decision: "continue"}, nil
+	return hooks.HookOutput{Decision: "approve"}, nil
 }
