@@ -1,0 +1,13 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T14:00:26.620698-04:00",
+  "conversation_excerpt": "\nTool interactions since last commit:\n- Write: /Users/jason/git/hooks/test-prompt.txt\n- Bash: git add test-prompt.txt \u0026\u0026 git commit -m \"Test: check if user prompts are captured\"\n- Bash: ./cnotes show | head -40\n- Bash: tail -10 /Users/jason/.claude/projects/-Users-jason-git-hooks/74f50245-6c21-42b6-8dfe-9b83ba8876f...\n- Bash: tail -20 /Users/jason/.claude/projects/-Users-jason-git-hooks/74f50245-6c21-42b6-8dfe-9b83ba8876f...\n- Bash: git log -2 --format=\"%h %cI %s\"\n- Read: [REDACTED].go\n- Edit: [REDACTED].go\n- Bash: go build -o cnotes \u0026\u0026 cp cnotes /Users/jason/go/bin/cnotes\n- Bash: rm test-prompt.txt \u0026\u0026 echo \"Test again with fixed parser\" \u003e test-prompt.txt \u0026\u0026 git add test-promp...",
+  "tools_used": [
+    "Bash",
+    "Write",
+    "Read",
+    "Edit"
+  ],
+  "commit_context": "Git command: rm test-prompt.txt \u0026\u0026 echo \"Test again with fixed parser\" \u003e test-prompt.txt \u0026\u0026 git add test-prompt.txt \u0026\u0026 git commit -m \"Test: user prompts with fixed parser\"\nResult: [main 66249e8] Test: user prompts with fixed parser",
+  "claude_version": "claude-sonnet-4-20250514"
+}
