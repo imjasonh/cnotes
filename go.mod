@@ -1,4 +1,4 @@
-module github.com/imjasonh/hooks
+module github.com/imjasonh/cnotes
 
 go 1.24.4
 

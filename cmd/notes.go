@@ -6,15 +6,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/imjasonh/hooks/internal/notes"
+	"github.com/imjasonh/cnotes/internal/notes"
 	"github.com/spf13/cobra"
 )
-
-var notesCmd = &cobra.Command{
-	Use:   "notes",
-	Short: "Manage git notes backups and restoration",
-	Long:  `Commands for backing up, restoring, and managing Claude conversation notes.`,
-}
 
 var backupCmd = &cobra.Command{
 	Use:   "backup [filename]",
@@ -209,9 +203,8 @@ func getCommitInfo(commit string) string {
 }
 
 func init() {
-	rootCmd.AddCommand(notesCmd)
-	notesCmd.AddCommand(backupCmd)
-	notesCmd.AddCommand(restoreCmd)
-	notesCmd.AddCommand(showCmd)
-	notesCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(backupCmd)
+	rootCmd.AddCommand(restoreCmd)
+	rootCmd.AddCommand(showCmd)
+	rootCmd.AddCommand(listCmd)
 }

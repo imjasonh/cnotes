@@ -1,169 +1,134 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with the cnotes codebase.
 
 ## Build and Run Commands
 
 ```bash
 # Build the binary
-go build -o hooks
+go build -o cnotes
 
-# Install hooks to Claude settings (project-level by default)
-./hooks install
+# Install cnotes to capture conversation notes (project-level by default)
+./cnotes install
 
 # Install to different scopes
-./hooks install --global    # ~/.claude/settings.json
-./hooks install --local     # ./.claude/settings.local.json
+./cnotes install --global    # ~/.claude/settings.json
+./cnotes install --local     # ./.claude/settings.json
 
-# Uninstall hooks
-./hooks install --uninstall
+# Uninstall cnotes
+./cnotes install --uninstall
+
+# View conversation notes for commits
+./cnotes show              # Show notes for HEAD
+./cnotes show abc1234      # Show notes for specific commit
+./cnotes list             # List all commits with notes
+
+# Backup and restore notes
+./cnotes backup my-backup.json
+./cnotes restore my-backup.json
 
 # Test hook execution manually (for debugging)
-echo '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":"{\"command\":\"ls\"}"}' | ./hooks run
-
-# Run with debug logging
-./hooks run --debug
+echo '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":"{\"command\":\"git commit -m test\"}"}' | ./cnotes
 ```
+
+## What cnotes Does
+
+cnotes is a focused tool that automatically captures Claude conversation context in git notes. It integrates with Claude Code as a PostToolUse hook handler and:
+
+1. **Monitors git commit commands** in bash tool executions
+2. **Extracts conversation context** from Claude transcript files
+3. **Attaches structured notes** to commits using `git notes --ref=claude-conversations`
+4. **Provides user-friendly commands** to view, backup, and restore conversation notes
 
 ## Architecture Overview
 
-This is a Claude Code hooks system that intercepts and processes all tool usage events. The architecture follows a registry pattern where individual hook handlers register themselves for specific events and tools.
+**Core Components:**
 
-### Core Components
+**`main.go`** - Entry point that calls cmd.Execute()
 
-**`internal/hooks/`** - Core hook engine
-- `types.go` - Defines all hook input/output types and helper methods. Uses `json.RawMessage` for parameters to avoid type casting
-- `registry.go` - Central registry for mapping events+tools to handler functions  
-- `runner.go` - Main execution engine that processes hook chains and handles JSON I/O
+**`cmd/root.go`** - Main cnotes command that handles Claude Code hook calls
+- Receives JSON input from Claude Code hooks via stdin
+- Only processes PostToolUse events for Bash commands containing "git commit"
+- Extracts conversation context and attaches it as git notes
+- Returns JSON response to Claude Code
 
-**`internal/handlers/`** - Hook implementations
-- Each file implements handlers for specific events (pretooluse.go, posttooluse.go, etc.)
-- Handlers auto-register in `init()` functions when package is imported
-- All 7 Claude Code events are implemented: PreToolUse, PostToolUse, UserPromptSubmit, Notification, Stop, SubagentStop, PreCompact
-- `gitcommit.go` - Git notes integration that automatically attaches conversation context to commits
+**`cmd/notes.go`** - User-facing commands for managing notes
+- `show` - Pretty-print conversation notes in Markdown format
+- `list` - List all commits with conversation notes  
+- `backup` - Create JSON backups of all notes
+- `restore` - Restore notes from JSON backup files
 
-**`internal/config/`** - Claude settings management  
-- `settings.go` - Handles reading/writing Claude's settings.json files with support for global, local, and project-level configurations
-- `notes.go` - Configuration for git notes functionality with privacy controls
+**`cmd/install.go`** - Installation command
+- Configures Claude Code settings to call cnotes as a hook handler
+- Supports project-level, global, and local installations
+- Sets up git configuration to preserve notes during rebases
 
-**`internal/notes/`** - Git notes integration
-- `git_notes.go` - Core git notes operations using command-line git
-- Automatically detects git commit commands and extracts commit hashes from output
-- Stores structured conversation data in `claude-conversations` git notes reference
+**`internal/notes/`** - Git notes operations
+- `git_notes.go` - Core git notes CRUD operations using command-line git
+- `backup.go` - Backup and restore functionality for notes
 
 **`internal/context/`** - Conversation context extraction
 - `conversation.go` - Parses Claude transcripts to extract relevant conversation context
-- Privacy-aware filtering to exclude sensitive information like passwords and tokens
+- Privacy-aware filtering to exclude sensitive information
 
-**`cmd/`** - CLI interface using Cobra
-- `run.go` - Handles hook execution (called by Claude Code)
-- `install.go` - Manages hook installation/uninstallation
-- `notes.go` - Git notes backup, restore, and management commands
+**`internal/config/`** - Configuration management
+- `settings.go` - Handles reading/writing Claude settings.json files
+- `notes.go` - Configuration for git notes behavior with privacy controls
 
-### Type Safety and JSON Handling
+## Key Features
 
-The codebase avoids string type casting entirely by:
-1. Using `json.RawMessage` for all parameter storage
-2. Providing typed structs (`BashToolInput`, `FileToolInput`) for tool-specific data
-3. Using `input.GetBashInput()`, `input.GetFileInput()` helper methods that unmarshal JSON directly to typed structs
-4. Never using `.(string)` type assertions anywhere in the codebase
+**Automatic Git Notes Creation:**
+- Detects `git commit` commands in Claude conversations
+- Extracts commit hashes from git command output
+- Stores conversation context as structured JSON in git notes
 
-### Hook Registration Pattern
-
-```go
-func init() {
-    hooks.RegisterHook(hooks.EventPreToolUse, "Bash", ValidateBashCommand)
-    hooks.RegisterHook(hooks.EventPreToolUse, "Write|Edit|MultiEdit", PreventSensitiveFileEdits) 
-}
-```
-
-Matchers support:
-- Exact tool names: `"Bash"`
-- Regex patterns: `"Write|Edit|MultiEdit"`  
-- Wildcard: `"*"` for all tools
-
-### Hook Function Signature
-
-All hook functions follow this signature:
-```go
-func HookName(ctx context.Context, input hooks.HookInput) (hooks.HookOutput, error)
-```
-
-Hook outputs can:
-- Block execution: `Decision: "block"`  
-- Allow with modifications: `Decision: "approve"` + `ModifiedParameters`
-- Add context to responses: `AdditionalContext`
-- Modify user prompts: `ModifiedUserPrompt`
-
-### Settings File Structure
-
-The system uses Claude's native hook configuration format with proper event name mapping:
-```json
-{
-  "hooks": {
-    "PreToolUse": [{"matcher": ".*", "hooks": [{"type": "command", "command": "/path/to/hooks run"}]}],
-    "PostToolUse": [{"matcher": ".*", "hooks": [{"type": "command", "command": "/path/to/hooks run"}]}]
-  }
-}
-```
-
-### Git Notes Integration
-
-The system includes automatic git notes functionality that captures conversation context:
-
+**Pretty-Printed Viewing:**
 ```bash
-# View conversation context for any commit
-git notes --ref=claude-conversations show HEAD
-git notes --ref=claude-conversations show abc1234
-
-# View notes in git log
-git log --show-notes=claude-conversations --oneline
+./cnotes show              # Beautifully formatted Markdown output
 ```
 
-**Configuration**: Create `.claude/notes.json` to customize:
+**Backup and Restore:**
+```bash
+./cnotes backup notes.json
+./cnotes restore notes.json
+```
+
+**Privacy Controls:**
+- Filters sensitive patterns (passwords, tokens, keys)
+- Configurable exclusion patterns
+- Length limits on conversation excerpts
+
+## Configuration
+
+Create `.claude/notes.json` to customize behavior:
 ```json
 {
   "enabled": true,
   "max_excerpt_length": 5000,
   "max_prompts": 2,
-  "include_tool_output": false,
   "notes_ref": "claude-conversations",
   "exclude_patterns": ["password", "token", "key", "secret"]
 }
 ```
 
-**What gets stored**:
-- Session ID and timestamp
-- Recent conversation excerpt with privacy filtering
-- Tools used during the session
-- Commit context (command and git output)
-- Claude version information
+## Hook Integration
 
-**Notes Management**:
-```bash
-# View conversation notes in readable Markdown format
-./hooks notes show [commit]  # defaults to HEAD
+cnotes registers as a Claude Code hook handler for:
+- **PostToolUse** events on **Bash** tools
+- Processes git commit commands to attach conversation context
+- Configures git to preserve notes during rebase operations
 
-# List all commits with conversation notes
-./hooks notes list  
+## Development Notes
 
-# Backup all conversation notes
-./hooks notes backup [filename]
+- **Focused Scope**: Only handles git notes functionality, removed all other hook handling
+- **Type Safety**: Uses json.RawMessage and typed structs, no string casting
+- **Privacy-First**: Built-in filtering for sensitive information
+- **User Experience**: Prioritizes readable Markdown output over raw JSON
+- **Reliability**: Comprehensive backup/restore system for data protection
 
-# Restore from backup after destructive operations
-./hooks notes restore <filename>
-```
-
-The system automatically warns before destructive git operations and configures git to preserve notes during rewrites.
-
-## Key Design Principles
-
-- **No Type Casting**: All JSON handling uses proper unmarshaling to typed structs
-- **Auto-Registration**: Hook handlers register themselves via `init()` functions  
-- **Comprehensive Coverage**: All 7 Claude Code events are implemented with full functionality
-- **Git Notes Integration**: Automatic conversation context attachment to commits
-- **Privacy-Aware**: Built-in filtering for sensitive information in conversation logs
-- **Project-First**: Defaults to project-level `.claude/settings.json` installation
-- **Extensible**: Easy to add new hook handlers by creating new files in `internal/handlers/`
-
-When adding new hooks, create a new file in `internal/handlers/`, implement the hook function, and register it in an `init()` function. The handler will be automatically loaded when the package is imported.
+When making changes, ensure:
+1. Git notes functionality remains the primary focus
+2. Privacy controls are maintained
+3. Backup/restore capabilities work correctly
+4. Pretty-printed output remains readable
+5. Installation process configures Claude Code correctly

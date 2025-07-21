@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/imjasonh/hooks/cmd"
+	"github.com/imjasonh/cnotes/cmd"
 )
 
 func main() {

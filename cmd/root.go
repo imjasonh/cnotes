@@ -1,22 +1,31 @@
 package cmd
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
+	"strings"
+	"time"
 
+	"github.com/imjasonh/cnotes/internal/config"
+	conv "github.com/imjasonh/cnotes/internal/context"
+	"github.com/imjasonh/cnotes/internal/notes"
 	"github.com/spf13/cobra"
 )
 
 var (
 	debug   bool
 	rootCmd = &cobra.Command{
-		Use:   "hooks",
-		Short: "Claude Code hooks runner",
-		Long: `A Go binary that handles Claude Code hooks for validating and modifying tool usage.
-
-This tool makes it easy to write custom hooks as simple Go functions and automatically
-register them to run when Claude Code executes various tools.`,
+		Use:   "cnotes",
+		Short: "Git notes for Claude conversations",
+		Long: `cnotes automatically captures Claude conversation context in git notes.
+		
+When called by Claude Code hooks, it detects git commit commands and attaches
+conversation context as git notes for easy reference later.`,
+		RunE: runHook,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if debug {
 				opts := &slog.HandlerOptions{Level: slog.LevelDebug}
@@ -26,6 +35,218 @@ register them to run when Claude Code executes various tools.`,
 		},
 	}
 )
+
+// HookInput represents the input from Claude Code hooks
+type HookInput struct {
+	SessionID      string          `json:"session_id"`
+	TranscriptPath string          `json:"transcript_path"`
+	CWD            string          `json:"cwd"`
+	HookEventName  string          `json:"hook_event_name"`
+	ToolName       string          `json:"tool_name,omitempty"`
+	ToolInput      json.RawMessage `json:"tool_input,omitempty"`
+	ToolResponse   json.RawMessage `json:"tool_response,omitempty"`
+}
+
+// BashToolInput represents bash tool parameters
+type BashToolInput struct {
+	Command     string `json:"command"`
+	Description string `json:"description,omitempty"`
+}
+
+// HookOutput represents the response to Claude Code
+type HookOutput struct {
+	Decision string `json:"decision,omitempty"`
+}
+
+func runHook(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	// Read input from stdin (called by Claude Code hooks)
+	inputBytes, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return fmt.Errorf("failed to read input: %w", err)
+	}
+
+	if len(inputBytes) == 0 {
+		return fmt.Errorf("no input received")
+	}
+
+	// Parse hook input
+	var input HookInput
+	if err := json.Unmarshal(inputBytes, &input); err != nil {
+		return fmt.Errorf("failed to parse input: %w", err)
+	}
+
+	// Only handle PostToolUse events for Bash commands
+	if input.HookEventName != "PostToolUse" || input.ToolName != "Bash" {
+		// For all other events, just approve
+		return writeOutput(HookOutput{Decision: "approve"})
+	}
+
+	// Extract bash command
+	var bashInput BashToolInput
+	if err := json.Unmarshal(input.ToolInput, &bashInput); err != nil {
+		return writeOutput(HookOutput{Decision: "approve"})
+	}
+
+	// Check if this is a git commit command
+	if !isGitCommitCommand(bashInput.Command) {
+		return writeOutput(HookOutput{Decision: "approve"})
+	}
+
+	// Load configuration
+	cfg := config.LoadNotesConfig(input.CWD)
+	if !cfg.Enabled {
+		return writeOutput(HookOutput{Decision: "approve"})
+	}
+
+	// Process the git commit and attach notes
+	if err := processGitCommit(ctx, input, bashInput); err != nil {
+		slog.Error("failed to process git commit", "error", err)
+		// Don't fail the hook, just log the error
+	}
+
+	return writeOutput(HookOutput{Decision: "approve"})
+}
+
+func processGitCommit(ctx context.Context, input HookInput, bashInput BashToolInput) error {
+	// Extract git output from tool response
+	var gitOutput string
+	if len(input.ToolResponse) > 0 {
+		var toolResponse struct {
+			Stdout string `json:"stdout"`
+		}
+		if err := json.Unmarshal(input.ToolResponse, &toolResponse); err == nil {
+			gitOutput = toolResponse.Stdout
+		}
+	}
+
+	if gitOutput == "" {
+		return fmt.Errorf("no git output found")
+	}
+
+	// Extract commit hash
+	commitHash := extractCommitHash(gitOutput)
+	if commitHash == "" {
+		return fmt.Errorf("could not extract commit hash")
+	}
+
+	// Create notes manager
+	notesManager := notes.NewNotesManager(input.CWD)
+	cfg := config.LoadNotesConfig(input.CWD)
+	notesManager.SetNotesRef(cfg.NotesRef)
+
+	// Check if note already exists
+	if notesManager.HasConversationNote(ctx, commitHash) {
+		return nil
+	}
+
+	// Extract conversation context
+	contextExtractor := conv.NewContextExtractor()
+	conversationContext, err := contextExtractor.ExtractRecentContext(input.TranscriptPath, input.SessionID)
+	if err != nil {
+		return fmt.Errorf("failed to extract conversation context: %w", err)
+	}
+
+	// Create conversation excerpt
+	excerpt := contextExtractor.CreateExcerpt(conversationContext)
+
+	// Collect tools used
+	toolsUsed := []string{"Bash"}
+	for _, interaction := range conversationContext.ToolInteractions {
+		if interaction.Tool != "" && !contains(toolsUsed, interaction.Tool) {
+			toolsUsed = append(toolsUsed, interaction.Tool)
+		}
+	}
+
+	// Create conversation note
+	note := notes.ConversationNote{
+		SessionID:           input.SessionID,
+		Timestamp:           time.Now(),
+		ConversationExcerpt: excerpt,
+		ToolsUsed:           toolsUsed,
+		CommitContext:       buildCommitContext(bashInput.Command, gitOutput),
+		ClaudeVersion:       "claude-sonnet-4-20250514",
+	}
+
+	// Add the note
+	if err := notesManager.AddConversationNote(ctx, commitHash, note); err != nil {
+		return fmt.Errorf("failed to add conversation note: %w", err)
+	}
+
+	slog.Info("attached conversation context to commit",
+		"commit", commitHash,
+		"session_id", input.SessionID)
+
+	return nil
+}
+
+func isGitCommitCommand(command string) bool {
+	command = strings.TrimSpace(command)
+	patterns := []string{"git commit"}
+	for _, pattern := range patterns {
+		if strings.Contains(command, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+func extractCommitHash(output string) string {
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "[") && strings.Contains(line, "]") {
+			parts := strings.Split(line, "]")
+			if len(parts) > 0 {
+				beforeBracket := strings.TrimSpace(strings.TrimPrefix(parts[0], "["))
+				hashParts := strings.Split(beforeBracket, " ")
+				if len(hashParts) > 1 {
+					return hashParts[1]
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func buildCommitContext(command, output string) string {
+	var parts []string
+	parts = append(parts, fmt.Sprintf("Git command: %s", command))
+
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if strings.Contains(line, "[") && strings.Contains(line, "]") {
+			parts = append(parts, fmt.Sprintf("Result: %s", line))
+			break
+		}
+	}
+
+	return strings.Join(parts, "\n")
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+func writeOutput(output HookOutput) error {
+	outputBytes, err := json.Marshal(output)
+	if err != nil {
+		return fmt.Errorf("failed to marshal output: %w", err)
+	}
+
+	fmt.Println(string(outputBytes))
+	return nil
+}
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {

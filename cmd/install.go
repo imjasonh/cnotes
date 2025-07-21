@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/imjasonh/hooks/internal/config"
+	"github.com/imjasonh/cnotes/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -16,8 +16,8 @@ var (
 	local      bool
 	installCmd = &cobra.Command{
 		Use:   "install",
-		Short: "Install hooks to Claude settings",
-		Long: `Install this binary as a hook handler in your Claude settings.
+		Short: "Install cnotes to capture git conversation notes",
+		Long: `Install cnotes as a Claude Code hook handler to automatically capture conversation context in git notes.
 
 By default, installs to project settings (.claude/settings.json in current directory).
 Use --global for user settings (~/.claude/settings.json).
@@ -25,10 +25,10 @@ Use --local for local directory settings (./.claude/settings.json).
 
 This command will:
 1. Find or create the appropriate settings.json file
-2. Add this binary to handle all hook events  
-3. Configure it to match all tools
+2. Add cnotes to handle PostToolUse events for Bash commands
+3. Configure git to preserve notes during rebases
 
-Use --uninstall to remove the hooks.`,
+Use --uninstall to remove cnotes from Claude settings.`,
 		RunE: runInstall,
 	}
 )
