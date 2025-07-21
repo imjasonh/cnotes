@@ -40,9 +40,20 @@ This is a Claude Code hooks system that intercepts and processes all tool usage 
 - Each file implements handlers for specific events (pretooluse.go, posttooluse.go, etc.)
 - Handlers auto-register in `init()` functions when package is imported
 - All 7 Claude Code events are implemented: PreToolUse, PostToolUse, UserPromptSubmit, Notification, Stop, SubagentStop, PreCompact
+- `gitcommit.go` - Git notes integration that automatically attaches conversation context to commits
 
 **`internal/config/`** - Claude settings management  
 - `settings.go` - Handles reading/writing Claude's settings.json files with support for global, local, and project-level configurations
+- `notes.go` - Configuration for git notes functionality with privacy controls
+
+**`internal/notes/`** - Git notes integration
+- `git_notes.go` - Core git notes operations using command-line git
+- Automatically detects git commit commands and extracts commit hashes from output
+- Stores structured conversation data in `claude-conversations` git notes reference
+
+**`internal/context/`** - Conversation context extraction
+- `conversation.go` - Parses Claude transcripts to extract relevant conversation context
+- Privacy-aware filtering to exclude sensitive information like passwords and tokens
 
 **`cmd/`** - CLI interface using Cobra
 - `run.go` - Handles hook execution (called by Claude Code)
@@ -95,11 +106,45 @@ The system uses Claude's native hook configuration format with proper event name
 }
 ```
 
+### Git Notes Integration
+
+The system includes automatic git notes functionality that captures conversation context:
+
+```bash
+# View conversation context for any commit
+git notes --ref=claude-conversations show HEAD
+git notes --ref=claude-conversations show abc1234
+
+# View notes in git log
+git log --show-notes=claude-conversations --oneline
+```
+
+**Configuration**: Create `.claude/notes.json` to customize:
+```json
+{
+  "enabled": true,
+  "max_excerpt_length": 5000,
+  "max_prompts": 2,
+  "include_tool_output": false,
+  "notes_ref": "claude-conversations",
+  "exclude_patterns": ["password", "token", "key", "secret"]
+}
+```
+
+**What gets stored**:
+- Session ID and timestamp
+- Recent conversation excerpt with privacy filtering
+- Tools used during the session
+- Commit context (command and git output)
+- Claude version information
+
 ## Key Design Principles
 
 - **No Type Casting**: All JSON handling uses proper unmarshaling to typed structs
 - **Auto-Registration**: Hook handlers register themselves via `init()` functions  
-- **Comprehensive Coverage**: All 7 Claude Code events are implemented with placeholder functionality
+- **Comprehensive Coverage**: All 7 Claude Code events are implemented with full functionality
+- **Git Notes Integration**: Automatic conversation context attachment to commits
+- **Privacy-Aware**: Built-in filtering for sensitive information in conversation logs
 - **Project-First**: Defaults to project-level `.claude/settings.json` installation
 - **Extensible**: Easy to add new hook handlers by creating new files in `internal/handlers/`
 
