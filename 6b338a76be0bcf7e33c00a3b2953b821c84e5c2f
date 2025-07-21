@@ -1,0 +1,11 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T13:37:33.737241-04:00",
+  "conversation_excerpt": "\nTool interactions since last commit:\n- Bash: git add test-dedup.txt \u0026\u0026 git commit -m \"Test: conversation context deduplication\"\n- Bash: ./cnotes show | head -40\n- Bash: git log --format=\"%h %cI %s\" -3\n- Edit: /Users/jason/git/hooks/cmd/root.go\n- Edit: [REDACTED].go\n- Bash: go build -o cnotes \u0026\u0026 cp cnotes /Users/jason/go/bin/cnotes\n- Bash: rm test-dedup.txt \u0026\u0026 git add test-dedup.txt \u0026\u0026 git commit -m \"Test: debug timestamp filtering\" 2\u003e...",
+  "tools_used": [
+    "Bash",
+    "Edit"
+  ],
+  "commit_context": "Git command: rm test-dedup.txt \u0026\u0026 git add test-dedup.txt \u0026\u0026 git commit -m \"Test: debug timestamp filtering\" 2\u003e\u00261 | head -20\nResult: [main 6b338a7] Test: debug timestamp filtering",
+  "claude_version": "claude-sonnet-4-20250514"
+}
