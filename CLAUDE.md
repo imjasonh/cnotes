@@ -128,6 +128,10 @@ cnotes registers as a Claude Code hook handler for:
 - **User Experience**: Prioritizes readable Markdown output over raw JSON
 - **Reliability**: Comprehensive backup/restore system for data protection
 
+## Memories
+
+- Don't update the readme listing new features you're adding; the README is not a changelog. Remove the line about duplicate content.
+
 When making changes, ensure:
 1. Git notes functionality remains the primary focus
 2. Privacy controls are maintained

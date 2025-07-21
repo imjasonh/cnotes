@@ -70,14 +70,24 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	// Prevent installation from temporary directories (unless uninstalling)
 	if !uninstall {
 		tempDir := os.TempDir()
+		
 		// Resolve any symlinks in the executable path for comparison
 		realExecutable, err := filepath.EvalSymlinks(executable)
 		if err != nil {
 			realExecutable = executable // Fall back to original if can't resolve
 		}
 		
+		// Also resolve tempDir in case it's a symlink (like /tmp on macOS)
+		realTempDir, err := filepath.EvalSymlinks(tempDir)
+		if err != nil {
+			realTempDir = tempDir
+		}
+		
 		// Check if executable is in temp directory
-		if strings.HasPrefix(realExecutable, tempDir) || strings.HasPrefix(executable, "/tmp/") {
+		if strings.HasPrefix(realExecutable, tempDir) || 
+		   strings.HasPrefix(executable, tempDir) ||
+		   strings.HasPrefix(realExecutable, realTempDir) ||
+		   strings.HasPrefix(executable, realTempDir) {
 			return fmt.Errorf("cannot install from temporary directory: %s\nPlease build and install cnotes properly:\n  go install && cnotes install", executable)
 		}
 	}
