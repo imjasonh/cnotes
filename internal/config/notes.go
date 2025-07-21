@@ -23,7 +23,7 @@ func DefaultNotesConfig() *NotesConfig {
 	return &NotesConfig{
 		Enabled:           true,
 		MaxExcerptLength:  5000,
-		MaxPrompts:        2,
+		MaxPrompts:        100,
 		IncludeToolOutput: false, // Privacy: don't include potentially sensitive output
 		NotesRef:          "claude-conversations",
 		ExcludePatterns: []string{
