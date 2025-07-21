@@ -99,7 +99,10 @@ This package includes several example hooks:
 - **Project Context**: Adds git branch and project type information
 
 ### Notification
+- **Visual Notifications**: Shows native macOS notifications via `terminal-notifier`
 - **Speech Notifications**: Uses macOS 'say' command to speak notifications aloud
+
+Note: Install `terminal-notifier` with `brew install terminal-notifier` for visual notifications.
 
 ## Testing Hooks
 
