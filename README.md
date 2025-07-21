@@ -1,9 +1,8 @@
 # cnotes - Git Notes for Claude Conversations
 
-**cnotes** automatically captures Claude conversation context in git notes, making it easy to understand the development history and reasoning behind each commit. The tool shows a conversational transcript of user prompts, tool uses, and Claude's responses.
+**cnotes** automatically captures Claude conversation context in [git notes](https://git-scm.com/docs/git-notes) using [Claude hooks](https://docs.anthropic.com/en/docs/claude-code/hooks), making it easy to understand the development history and reasoning behind each commit. The tool shows a conversational transcript of user prompts, tool uses, and Claude's responses.
 
 ⭐️ `cnotes` is pronounced like 💵 c-notes or 🏊 [_cenotes_](https://en.wikipedia.org/wiki/Cenote)
-
 
 ## Quick Start
 
@@ -11,6 +10,8 @@
 # Build and install
 go install github.com/imjasonh/cnotes
 cnotes install
+
+# Note: you may need to restart `claude` to pick up the new hooks
 
 # Now every git commit made through Claude will have conversation context attached!
 
