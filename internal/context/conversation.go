@@ -1,6 +1,7 @@
 package context
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -81,97 +82,101 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string) *C
 	}
 
 	lines := strings.Split(content, "\n")
-	currentMessage := ""
-	messageType := ""
-
+	
+	// Parse JSONL format
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-
-		// Skip empty lines
 		if line == "" {
 			continue
 		}
 
-		// Detect message boundaries and types
-		if strings.HasPrefix(line, "Human:") || strings.HasPrefix(line, "User:") {
-			// Save previous message if exists
-			if currentMessage != "" && messageType == "claude" {
-				context.ClaudeResponses = append(context.ClaudeResponses, strings.TrimSpace(currentMessage))
-			}
-
-			messageType = "human"
-			currentMessage = strings.TrimPrefix(strings.TrimPrefix(line, "Human:"), "User:")
-		} else if strings.HasPrefix(line, "Assistant:") || strings.HasPrefix(line, "Claude:") {
-			// Save previous message if exists
-			if currentMessage != "" && messageType == "human" {
-				context.UserPrompts = append(context.UserPrompts, strings.TrimSpace(currentMessage))
-			}
-
-			messageType = "claude"
-			currentMessage = strings.TrimPrefix(strings.TrimPrefix(line, "Assistant:"), "Claude:")
-		} else if strings.Contains(line, "tool_use") || strings.Contains(line, "function_calls") {
-			// Try to parse tool interactions
-			toolInteraction := ce.parseToolInteraction(line)
-			if toolInteraction != nil {
-				context.ToolInteractions = append(context.ToolInteractions, *toolInteraction)
-			}
-		} else {
-			// Continue building current message
-			if currentMessage != "" {
-				currentMessage += "\n"
-			}
-			currentMessage += line
+		// Parse each line as JSON
+		var entry map[string]interface{}
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			continue // Skip invalid JSON lines
 		}
-	}
 
-	// Don't forget the last message
-	if currentMessage != "" {
-		if messageType == "human" {
-			context.UserPrompts = append(context.UserPrompts, strings.TrimSpace(currentMessage))
-		} else if messageType == "claude" {
-			context.ClaudeResponses = append(context.ClaudeResponses, strings.TrimSpace(currentMessage))
+		// Only process entries for the current session
+		entrySessionID, _ := entry["sessionId"].(string)
+		// Debug: log session matching
+		if entrySessionID != "" && entrySessionID != sessionID {
+			continue
+		}
+
+		// Extract based on type
+		entryType, _ := entry["type"].(string)
+		
+		switch entryType {
+		case "user":
+			// Extract user prompts
+			if msg, ok := entry["message"].(map[string]interface{}); ok {
+				if content, ok := msg["content"].([]interface{}); ok {
+					for _, c := range content {
+						if textContent, ok := c.(map[string]interface{}); ok {
+							if text, ok := textContent["text"].(string); ok && text != "" {
+								// Skip system messages about interruptions
+								if !strings.Contains(text, "[Request interrupted by user") {
+									context.UserPrompts = append(context.UserPrompts, text)
+								}
+							}
+						}
+					}
+				}
+			}
+			
+		case "assistant":
+			// Extract tool uses from assistant messages
+			if msg, ok := entry["message"].(map[string]interface{}); ok {
+				if content, ok := msg["content"].([]interface{}); ok {
+					for _, c := range content {
+						if toolUse, ok := c.(map[string]interface{}); ok {
+							if toolUse["type"] == "tool_use" {
+								toolName, _ := toolUse["name"].(string)
+								if input, ok := toolUse["input"].(map[string]interface{}); ok {
+									interaction := ToolInteraction{
+										Tool: toolName,
+									}
+									
+									// Extract key information based on tool type
+									switch toolName {
+									case "Bash":
+										if cmd, ok := input["command"].(string); ok {
+											interaction.Input = cmd
+										}
+									case "Write", "Edit", "MultiEdit":
+										if path, ok := input["file_path"].(string); ok {
+											interaction.Input = path
+										}
+									case "Read":
+										if path, ok := input["file_path"].(string); ok {
+											interaction.Input = path
+										}
+									case "WebFetch":
+										if url, ok := input["url"].(string); ok {
+											interaction.Input = url
+										}
+									default:
+										// For other tools, try to get a meaningful representation
+										if bytes, err := json.Marshal(input); err == nil {
+											interaction.Input = string(bytes)
+										}
+									}
+									
+									if interaction.Input != "" {
+										context.ToolInteractions = append(context.ToolInteractions, interaction)
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 
 	return context
 }
 
-// parseToolInteraction attempts to parse tool interaction from a line
-func (ce *ContextExtractor) parseToolInteraction(line string) *ToolInteraction {
-	// This is a simplified parser - in reality, the transcript format may vary
-	if strings.Contains(line, "Bash") && strings.Contains(line, "command") {
-		return &ToolInteraction{
-			Tool:   "Bash",
-			Input:  ce.extractBetween(line, "command", "description"),
-			Output: "Command executed",
-		}
-	}
-
-	if strings.Contains(line, "Edit") || strings.Contains(line, "Write") {
-		return &ToolInteraction{
-			Tool:   "File",
-			Input:  ce.extractBetween(line, "file_path", "content"),
-			Output: "File modified",
-		}
-	}
-
-	return nil
-}
-
-// extractBetween extracts text between two markers
-func (ce *ContextExtractor) extractBetween(text, start, end string) string {
-	startIdx := strings.Index(text, start)
-	if startIdx == -1 {
-		return ""
-	}
-
-	endIdx := strings.Index(text[startIdx:], end)
-	if endIdx == -1 {
-		return text[startIdx:]
-	}
-
-	return text[startIdx : startIdx+endIdx]
-}
 
 // filterSensitiveContent removes sensitive information from context
 func (ce *ContextExtractor) filterSensitiveContent(context *ConversationContext) *ConversationContext {
@@ -206,17 +211,17 @@ func (ce *ContextExtractor) sanitizeText(text string) string {
 func (ce *ContextExtractor) CreateExcerpt(context *ConversationContext) string {
 	var parts []string
 
-	// Include recent user prompts (last 2)
+	// Include recent user prompts (last 3 to capture more context)
 	if len(context.UserPrompts) > 0 {
-		start := len(context.UserPrompts) - 2
+		start := len(context.UserPrompts) - 3
 		if start < 0 {
 			start = 0
 		}
 		parts = append(parts, "Recent user prompts:")
 		for i := start; i < len(context.UserPrompts); i++ {
 			prompt := context.UserPrompts[i]
-			if len(prompt) > 200 {
-				prompt = prompt[:197] + "..."
+			if len(prompt) > 300 {
+				prompt = prompt[:297] + "..."
 			}
 			parts = append(parts, fmt.Sprintf("- %s", prompt))
 		}

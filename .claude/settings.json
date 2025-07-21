@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/jason/go/bin/cnotes run"
+            "command": "/Users/jason/go/bin/cnotes"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/jason/go/bin/cnotes run"
+            "command": "/Users/jason/go/bin/cnotes"
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/jason/go/bin/cnotes run"
+            "command": "/Users/jason/go/bin/cnotes"
           }
         ]
       }
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/jason/go/bin/cnotes run"
+            "command": "/Users/jason/go/bin/cnotes"
           }
         ]
       }
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/jason/go/bin/cnotes run"
+            "command": "/Users/jason/go/bin/cnotes"
           }
         ]
       }
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/jason/go/bin/cnotes run"
+            "command": "/Users/jason/go/bin/cnotes"
           }
         ]
       }
@@ -72,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/jason/go/bin/cnotes run"
+            "command": "/Users/jason/go/bin/cnotes"
           }
         ]
       }
