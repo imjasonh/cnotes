@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // ConversationContext represents relevant conversation context for a commit
@@ -48,6 +49,11 @@ func NewContextExtractor() *ContextExtractor {
 
 // ExtractRecentContext extracts recent conversation context from a transcript file
 func (ce *ContextExtractor) ExtractRecentContext(transcriptPath string, sessionID string) (*ConversationContext, error) {
+	return ce.ExtractContextSince(transcriptPath, sessionID, time.Time{})
+}
+
+// ExtractContextSince extracts conversation context since a given timestamp
+func (ce *ContextExtractor) ExtractContextSince(transcriptPath string, sessionID string, since time.Time) (*ConversationContext, error) {
 	if transcriptPath == "" {
 		return &ConversationContext{}, nil
 	}
@@ -65,7 +71,7 @@ func (ce *ContextExtractor) ExtractRecentContext(transcriptPath string, sessionI
 	}
 
 	// Parse the transcript content
-	context := ce.parseTranscriptContent(string(content), sessionID)
+	context := ce.parseTranscriptContent(string(content), sessionID, since)
 
 	// Apply privacy filters
 	context = ce.filterSensitiveContent(context)
@@ -74,7 +80,7 @@ func (ce *ContextExtractor) ExtractRecentContext(transcriptPath string, sessionI
 }
 
 // parseTranscriptContent parses transcript content and extracts conversation elements
-func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string) *ConversationContext {
+func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, since time.Time) *ConversationContext {
 	context := &ConversationContext{
 		UserPrompts:      []string{},
 		ClaudeResponses:  []string{},
@@ -98,9 +104,18 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string) *C
 
 		// Only process entries for the current session
 		entrySessionID, _ := entry["sessionId"].(string)
-		// Debug: log session matching
 		if entrySessionID != "" && entrySessionID != sessionID {
 			continue
+		}
+
+		// Filter by timestamp if provided
+		if !since.IsZero() {
+			if timestampStr, ok := entry["timestamp"].(string); ok {
+				entryTime, err := time.Parse(time.RFC3339, timestampStr)
+				if err == nil && entryTime.Before(since) {
+					continue // Skip entries before the cutoff
+				}
+			}
 		}
 
 		// Extract based on type
@@ -211,15 +226,10 @@ func (ce *ContextExtractor) sanitizeText(text string) string {
 func (ce *ContextExtractor) CreateExcerpt(context *ConversationContext) string {
 	var parts []string
 
-	// Include recent user prompts (last 3 to capture more context)
+	// Include all user prompts (they're already filtered by time)
 	if len(context.UserPrompts) > 0 {
-		start := len(context.UserPrompts) - 3
-		if start < 0 {
-			start = 0
-		}
-		parts = append(parts, "Recent user prompts:")
-		for i := start; i < len(context.UserPrompts); i++ {
-			prompt := context.UserPrompts[i]
+		parts = append(parts, "User prompts since last commit:")
+		for _, prompt := range context.UserPrompts {
 			if len(prompt) > 300 {
 				prompt = prompt[:297] + "..."
 			}
@@ -227,11 +237,15 @@ func (ce *ContextExtractor) CreateExcerpt(context *ConversationContext) string {
 		}
 	}
 
-	// Include recent tool interactions
+	// Include all tool interactions (they're already filtered by time)
 	if len(context.ToolInteractions) > 0 {
-		parts = append(parts, "\nTool interactions:")
+		parts = append(parts, "\nTool interactions since last commit:")
 		for _, interaction := range context.ToolInteractions {
-			parts = append(parts, fmt.Sprintf("- %s: %s", interaction.Tool, interaction.Input))
+			input := interaction.Input
+			if len(input) > 100 {
+				input = input[:97] + "..."
+			}
+			parts = append(parts, fmt.Sprintf("- %s: %s", interaction.Tool, input))
 		}
 	}
 

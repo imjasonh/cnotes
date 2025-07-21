@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -141,9 +142,12 @@ func processGitCommit(ctx context.Context, input HookInput, bashInput BashToolIn
 		return nil
 	}
 
-	// Extract conversation context
+	// Get the timestamp of the previous commit in this session
+	previousCommitTime := getLastCommitTimeForSession(ctx, notesManager, input.SessionID)
+	
+	// Extract conversation context since the last commit
 	contextExtractor := conv.NewContextExtractor()
-	conversationContext, err := contextExtractor.ExtractRecentContext(input.TranscriptPath, input.SessionID)
+	conversationContext, err := contextExtractor.ExtractContextSince(input.TranscriptPath, input.SessionID, previousCommitTime)
 	if err != nil {
 		return fmt.Errorf("failed to extract conversation context: %w", err)
 	}
@@ -236,6 +240,27 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// getLastCommitTimeForSession finds the most recent commit time for this session
+func getLastCommitTimeForSession(ctx context.Context, notesManager *notes.NotesManager, sessionID string) time.Time {
+	// For now, let's use a simpler approach - get the time of the previous commit
+	// This works well when commits are made sequentially in a session
+	cmd := exec.Command("git", "log", "-1", "--format=%cI", "HEAD~1")
+	output, err := cmd.Output()
+	if err != nil {
+		// No previous commit or error, return zero time
+		return time.Time{}
+	}
+	
+	timeStr := strings.TrimSpace(string(output))
+	commitTime, err := time.Parse(time.RFC3339, timeStr)
+	if err != nil {
+		return time.Time{}
+	}
+	
+	// Add a small buffer to ensure we don't miss events that happened right at commit time
+	return commitTime.Add(-5 * time.Second)
 }
 
 // readStdinWithTimeout reads from stdin with a timeout
