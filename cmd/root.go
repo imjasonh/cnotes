@@ -145,6 +145,9 @@ func processGitCommit(ctx context.Context, input HookInput, bashInput BashToolIn
 	// Get the timestamp of the previous commit in this session
 	previousCommitTime := getLastCommitTimeForSession(ctx, notesManager, input.SessionID)
 	
+	// Small delay to ensure transcript is written
+	time.Sleep(100 * time.Millisecond)
+	
 	// Extract conversation context since the last commit
 	contextExtractor := conv.NewContextExtractor()
 	conversationContext, err := contextExtractor.ExtractContextSince(input.TranscriptPath, input.SessionID, previousCommitTime)
