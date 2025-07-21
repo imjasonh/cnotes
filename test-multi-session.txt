@@ -1,0 +1,1 @@
+Testing multi-session context inclusion in git notes
