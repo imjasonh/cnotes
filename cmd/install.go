@@ -83,11 +83,15 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			realTempDir = tempDir
 		}
 		
-		// Check if executable is in temp directory
+		// Check if executable is in temp directory or is from go run
 		if strings.HasPrefix(realExecutable, tempDir) || 
 		   strings.HasPrefix(executable, tempDir) ||
 		   strings.HasPrefix(realExecutable, realTempDir) ||
-		   strings.HasPrefix(executable, realTempDir) {
+		   strings.HasPrefix(executable, realTempDir) ||
+		   strings.Contains(executable, "/go-build/") ||
+		   strings.Contains(realExecutable, "/go-build/") ||
+		   strings.Contains(executable, "/Caches/go-build/") ||
+		   strings.Contains(realExecutable, "/Caches/go-build/") {
 			return fmt.Errorf("cannot install from temporary directory: %s\nPlease build and install cnotes properly:\n  go install && cnotes install", executable)
 		}
 	}
