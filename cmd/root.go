@@ -262,8 +262,9 @@ func getLastCommitTimeForSession(ctx context.Context, notesManager *notes.NotesM
 		return time.Time{}
 	}
 	
-	// Add a small buffer to ensure we don't miss events that happened right at commit time
-	return commitTime.Add(-5 * time.Second)
+	// Add a larger buffer to ensure we capture user prompts that triggered the work
+	// User prompts often happen 30-60 seconds before the commit
+	return commitTime.Add(-60 * time.Second)
 }
 
 // readStdinWithTimeout reads from stdin with a timeout
