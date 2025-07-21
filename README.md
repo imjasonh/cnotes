@@ -43,14 +43,18 @@ func init() {
 
 ```go
 func BlockRmRf(ctx context.Context, input hooks.HookInput) (hooks.HookOutput, error) {
-    cmd := input.ToolUseRequest.Parameters["command"].(string)
-    if strings.Contains(cmd, "rm -rf /") {
+    bashInput, err := input.GetBashInput()
+    if err != nil {
+        return hooks.HookOutput{Decision: "approve"}, nil
+    }
+    
+    if strings.Contains(bashInput.Command, "rm -rf /") {
         return hooks.HookOutput{
             Decision: "block",
             Reason:   "Cannot execute rm -rf on root directory",
         }, nil
     }
-    return hooks.HookOutput{Decision: "continue"}, nil
+    return hooks.HookOutput{Decision: "approve"}, nil
 }
 ```
 
@@ -70,25 +74,29 @@ func AddGitInfo(ctx context.Context, input hooks.HookInput) (hooks.HookOutput, e
 
 ```go
 func ForceNonInteractiveSudo(ctx context.Context, input hooks.HookInput) (hooks.HookOutput, error) {
-    cmd := input.ToolUseRequest.Parameters["command"].(string)
-    if strings.Contains(cmd, "sudo") && !strings.Contains(cmd, "sudo -n") {
+    bashInput, err := input.GetBashInput()
+    if err != nil {
+        return hooks.HookOutput{Decision: "approve"}, nil
+    }
+    
+    if strings.Contains(bashInput.Command, "sudo") && !strings.Contains(bashInput.Command, "sudo -n") {
         return hooks.HookOutput{
-            Decision: "continue",
+            Decision: "approve",
             ModifiedParameters: map[string]interface{}{
-                "command": strings.ReplaceAll(cmd, "sudo", "sudo -n"),
+                "command": strings.ReplaceAll(bashInput.Command, "sudo", "sudo -n"),
             },
         }, nil
     }
-    return hooks.HookOutput{Decision: "continue"}, nil
+    return hooks.HookOutput{Decision: "approve"}, nil
 }
 ```
 
 ## Built-in Hooks
 
-This package includes several example hooks:
+This package includes comprehensive hook implementations for all Claude Code events:
 
 ### Pre Tool Use
-- **Bash Command Validator**: Blocks dangerous commands like `rm -rf /`
+- **Bash Command Validator**: Blocks dangerous commands using regex patterns
 - **Sensitive File Protection**: Prevents editing `.env`, `.aws/credentials`, etc.
 
 ### Post Tool Use
@@ -99,7 +107,16 @@ This package includes several example hooks:
 - **Project Context**: Adds git branch and project type information
 
 ### Notification
-- **Speech Notifications**: Uses macOS 'say' command to speak notifications aloud
+- **System Notifications**: Logs notification events for debugging and monitoring
+
+### Stop
+- **Session Completion**: Logs when main Claude agent finishes responding
+
+### SubagentStop  
+- **Subagent Completion**: Logs when Task tool subagents finish responding
+
+### PreCompact
+- **Context Compaction**: Handles before context window compaction (manual/auto)
 
 ## Testing Hooks
 

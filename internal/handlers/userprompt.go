@@ -5,38 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/imjasonh/hooks/internal/hooks"
 )
 
 func AddProjectContext(ctx context.Context, input hooks.HookInput) (hooks.HookOutput, error) {
-	// Speak notification for hook event on macOS
-	if runtime.GOOS == "darwin" {
-		if _, err := exec.LookPath("say"); err == nil {
-			// Extract first few words from prompt for context
-			promptPreview := input.Prompt
-			if len(promptPreview) > 50 {
-				promptPreview = promptPreview[:47] + "..."
-			}
-			// Remove newlines for speech
-			promptPreview = strings.ReplaceAll(promptPreview, "\n", " ")
-
-			spokenMessage := fmt.Sprintf("User prompt received: %s", promptPreview)
-			cmd := exec.CommandContext(ctx, "say", "-v", "Samantha", spokenMessage)
-			if err := cmd.Start(); err == nil {
-				go func() {
-					if err := cmd.Wait(); err != nil {
-						slog.Debug("say command failed", "error", err)
-					}
-				}()
-			}
-		}
-	}
-
 	var contexts []string
 
 	if gitRoot := findGitRoot(input.CWD); gitRoot != "" {
