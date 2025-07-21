@@ -1,0 +1,11 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T14:35:54.841933-04:00",
+  "conversation_excerpt": "Tool (Edit): /Users/jason/git/hooks/README.md\n\nTool (Bash): git add README.md \u0026\u0026 git commit -m \"Update README to mention conversational transcript format\"\n\nTool (Bash): ./cnotes show | head -50\n\nClaude: I see the issue - we lost the user prompts. This is because the conversation content was extracted after the previous commit, so it didn't include the user prompts that came before. Let me examine ...\n\nTool (Bash): ls -la /Users/jason/.claude/*.jsonl | tail -5\n\nTool (Bash): find /Users/jason -name \"*.jsonl\" -path \"*/.claude/*\" 2\u003e/dev/null | grep -v node_modules | tail -5\n\nUser: Nevermind keep going\n\nClaude: I see the settings.json was updated. Let me continue debugging why the conversational format isn't showing properly. Let me find the transcript directory:\n\nTool (Bash): ls -la /var/folders/*/T/claude*.jsonl 2\u003e/dev/null | head -5\n\nClaude: Let me check the hook input to see where the transcript path is:\n\nTool (Bash): echo '{\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Bash\",\"tool_input\":\"{\\\"command\\\":\\\"echo test\\\"}\",\"transcript_path\":\"/tmp/test.jsonl\"}' | ./cnot...\n\nClaude: Let me look at the actual git notes to see what's being stored:\n\nTool (Bash): git notes --ref=claude-conversations show HEAD | jq '.conversation_excerpt' -r | head -20\n\nClaude: I see - the new conversational format isn't being applied because the binary that's running as the hook is still the old one. The issue is that we installed to `/Users/jason/go/bin/cnotes` but we'r...\n\nTool (Bash): go build -o cnotes \u0026\u0026 cp cnotes /Users/jason/go/bin/cnotes\n\nClaude: Now let me make a test commit to see if the new format works:\n\nTool (Edit): /Users/jason/git/hooks/README.md\n\nTool (Bash): git add README.md \u0026\u0026 git commit -m \"Test conversational format in git notes\"",
+  "tools_used": [
+    "Bash",
+    "Edit"
+  ],
+  "commit_context": "Git command: git add README.md \u0026\u0026 git commit -m \"Test conversational format in git notes\"\nResult: [main 2510334] Test conversational format in git notes",
+  "claude_version": "claude-sonnet-4-20250514"
+}
