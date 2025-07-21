@@ -142,15 +142,15 @@ func processGitCommit(ctx context.Context, input HookInput, bashInput BashToolIn
 		return nil
 	}
 
-	// Get the timestamp of the previous commit in this session
-	previousCommitTime := getLastCommitTimeForSession(ctx, notesManager, input.SessionID)
+	// Get the last event time from the previous commit to avoid duplicates
+	lastEventTime := getLastEventTimeFromPreviousCommit(ctx, notesManager)
 	
 	// Small delay to ensure transcript is written
 	time.Sleep(100 * time.Millisecond)
 	
-	// Extract conversation context since the last commit
+	// Extract conversation context since the last event
 	contextExtractor := conv.NewContextExtractor(cfg)
-	conversationContext, err := contextExtractor.ExtractContextSince(input.TranscriptPath, input.SessionID, previousCommitTime)
+	conversationContext, err := contextExtractor.ExtractContextSince(input.TranscriptPath, input.SessionID, lastEventTime)
 	if err != nil {
 		return fmt.Errorf("failed to extract conversation context: %w", err)
 	}
@@ -174,6 +174,7 @@ func processGitCommit(ctx context.Context, input HookInput, bashInput BashToolIn
 		ToolsUsed:           toolsUsed,
 		CommitContext:       buildCommitContext(bashInput.Command, gitOutput),
 		ClaudeVersion:       "claude-sonnet-4-20250514",
+		LastEventTime:       conversationContext.LastEventTime,
 	}
 
 	// Add the note
@@ -245,26 +246,35 @@ func contains(slice []string, item string) bool {
 	return false
 }
 
-// getLastCommitTimeForSession finds the most recent commit time for this session
-func getLastCommitTimeForSession(ctx context.Context, notesManager *notes.NotesManager, sessionID string) time.Time {
-	// For now, let's use a simpler approach - get the time of the previous commit
-	// This works well when commits are made sequentially in a session
-	cmd := exec.Command("git", "log", "-1", "--format=%cI", "HEAD~1")
-	output, err := cmd.Output()
-	if err != nil {
-		// No previous commit or error, return zero time
-		return time.Time{}
+// getLastEventTimeFromPreviousCommit gets the last processed event time from the previous commit
+func getLastEventTimeFromPreviousCommit(ctx context.Context, notesManager *notes.NotesManager) time.Time {
+	// Try to get the previous commit's note
+	note, err := notesManager.GetConversationNote(ctx, "HEAD~1")
+	if err != nil || note == nil {
+		// No previous commit or note, use a time buffer approach
+		cmd := exec.Command("git", "log", "-1", "--format=%cI", "HEAD~1")
+		output, err := cmd.Output()
+		if err != nil {
+			return time.Time{}
+		}
+		
+		timeStr := strings.TrimSpace(string(output))
+		commitTime, err := time.Parse(time.RFC3339, timeStr)
+		if err != nil {
+			return time.Time{}
+		}
+		
+		// Use a 60 second buffer for the first commit in a session
+		return commitTime.Add(-60 * time.Second)
 	}
 	
-	timeStr := strings.TrimSpace(string(output))
-	commitTime, err := time.Parse(time.RFC3339, timeStr)
-	if err != nil {
-		return time.Time{}
+	// If we have a previous note with LastEventTime, use it
+	if !note.LastEventTime.IsZero() {
+		return note.LastEventTime
 	}
 	
-	// Add a larger buffer to ensure we capture user prompts that triggered the work
-	// User prompts often happen 30-60 seconds before the commit
-	return commitTime.Add(-60 * time.Second)
+	// Fall back to commit time with buffer
+	return note.Timestamp.Add(-60 * time.Second)
 }
 
 // readStdinWithTimeout reads from stdin with a timeout

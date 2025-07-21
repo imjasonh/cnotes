@@ -20,6 +20,7 @@ type ConversationContext struct {
 	ClaudeResponses  []string          `json:"claude_responses"`
 	ToolInteractions []ToolInteraction `json:"tool_interactions"`
 	Events           []ConversationEvent `json:"events"` // New: chronological events
+	LastEventTime    time.Time         `json:"last_event_time"` // Track the latest event timestamp
 }
 
 // ConversationEvent represents any event in the conversation
@@ -316,6 +317,13 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 					})
 				}
 			}
+		}
+	}
+
+	// Track the last event time from all events
+	for _, event := range context.Events {
+		if event.Timestamp.After(context.LastEventTime) {
+			context.LastEventTime = event.Timestamp
 		}
 	}
 

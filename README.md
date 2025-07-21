@@ -4,6 +4,8 @@
 
 ⭐️ `cnotes` is pronounced like 💵 c-notes or 🏊 [_cenotes_](https://en.wikipedia.org/wiki/Cenote)
 
+This tool ensures no duplicate content between commits by tracking the last processed event timestamp.
+
 
 ## Quick Start
 

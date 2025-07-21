@@ -17,6 +17,7 @@ type ConversationNote struct {
 	ToolsUsed           []string  `json:"tools_used"`
 	CommitContext       string    `json:"commit_context"`
 	ClaudeVersion       string    `json:"claude_version"`
+	LastEventTime       time.Time `json:"last_event_time,omitempty"` // Track last processed event to avoid duplicates
 }
 
 // NotesManager handles git notes operations for Claude conversations
