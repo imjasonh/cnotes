@@ -167,8 +167,15 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 		case "user":
 			// Extract user prompts
 			if msg, ok := entry["message"].(map[string]interface{}); ok {
-				if content, ok := msg["content"].([]interface{}); ok {
-					for _, c := range content {
+				// Handle both string content and array content formats
+				if content, ok := msg["content"].(string); ok && content != "" {
+					// Direct string content
+					if !strings.Contains(content, "[Request interrupted by user") {
+						context.UserPrompts = append(context.UserPrompts, content)
+					}
+				} else if contentArray, ok := msg["content"].([]interface{}); ok {
+					// Array of content objects
+					for _, c := range contentArray {
 						if textContent, ok := c.(map[string]interface{}); ok {
 							if text, ok := textContent["text"].(string); ok && text != "" {
 								// Skip system messages about interruptions

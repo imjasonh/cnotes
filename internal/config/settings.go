@@ -96,10 +96,9 @@ func InstallHooksToPath(binaryPath, settingsPath string) error {
 		settings.Hooks = make(map[string][]HookDefinition)
 	}
 
-	hookCmd := binaryPath + " run"
 	hookAction := HookAction{
 		Type:    "command",
-		Command: hookCmd,
+		Command: binaryPath,
 	}
 
 	hookDef := HookDefinition{
@@ -123,7 +122,7 @@ func InstallHooksToPath(binaryPath, settingsPath string) error {
 		found := false
 		for i, def := range settings.Hooks[claudeEvent] {
 			for j, action := range def.Hooks {
-				if action.Command == hookCmd {
+				if action.Command == binaryPath {
 					// Update existing hook
 					settings.Hooks[claudeEvent][i].Hooks[j] = hookAction
 					found = true
@@ -158,8 +157,6 @@ func UninstallHooksFromPath(binaryPath, settingsPath string) error {
 		return nil
 	}
 
-	hookCmd := binaryPath + " run"
-
 	// Remove our hook from all events
 	for eventName, hookDefs := range settings.Hooks {
 		newDefs := make([]HookDefinition, 0)
@@ -167,7 +164,7 @@ func UninstallHooksFromPath(binaryPath, settingsPath string) error {
 		for _, def := range hookDefs {
 			newActions := make([]HookAction, 0)
 			for _, action := range def.Hooks {
-				if action.Command != hookCmd {
+				if action.Command != binaryPath {
 					newActions = append(newActions, action)
 				}
 			}
