@@ -80,19 +80,22 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to install hooks: %w", err)
 	}
 
-	fmt.Printf("✓ cnotes installed successfully to %s settings\n", scope)
-	fmt.Printf("  Binary: %s\n", executable)
-	fmt.Printf("  Settings: %s\n", settingsPath)
-	fmt.Printf("\nWhat cnotes does:\n")
-	fmt.Println("  • Monitors git commit commands executed through Claude")
-	fmt.Println("  • Automatically captures conversation context in git notes")
-	fmt.Println("  • Includes user prompts and tool interactions since last commit")
-	fmt.Println("  • Scans all transcript files in the project for cross-session context")
-	fmt.Printf("\nGit notes configuration:\n")
-	fmt.Printf("  • Notes ref: claude-conversations\n")
-	fmt.Printf("  • Use 'cnotes show' to view conversation notes for commits\n")
-	fmt.Printf("  • Use 'cnotes list' to see all commits with notes\n")
-	fmt.Printf("  • Use 'cnotes backup/restore' to manage your notes\n")
+	fmt.Printf(`✓ cnotes installed successfully to %s settings
+  Binary: %s
+  Settings: %s
+
+What cnotes does:
+  • Monitors git commit commands executed through Claude
+  • Automatically captures conversation context in git notes
+  • Includes user prompts and tool interactions since last commit
+  • Scans all transcript files in the project for cross-session context
+
+Git notes configuration:
+  • Notes ref: claude-conversations
+  • Use 'cnotes show' to view conversation notes for commits
+  • Use 'cnotes list' to see all commits with notes
+  • Use 'cnotes backup/restore' to manage your notes
+`, scope, executable, settingsPath)
 
 	return nil
 }
