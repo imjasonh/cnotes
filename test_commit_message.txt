@@ -1,4 +1,0 @@
-Test commit to verify git notes functionality
-
-This commit is created to test the Claude conversation logging
-via git notes integration.

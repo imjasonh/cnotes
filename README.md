@@ -118,6 +118,109 @@ This package includes comprehensive hook implementations for all Claude Code eve
 ### PreCompact
 - **Context Compaction**: Handles before context window compaction (manual/auto)
 
+## Git Notes Integration
+
+This hooks system automatically attaches Claude conversation context to git commits using [git notes](https://git-scm.com/docs/git-notes). When you run `git commit` commands, the system captures relevant conversation context and stores it alongside your commits.
+
+### What Gets Stored
+
+Each git note contains structured JSON data with:
+- **Session ID**: Unique identifier for the Claude session
+- **Timestamp**: When the commit was made
+- **Conversation Excerpt**: Recent user prompts and tool interactions
+- **Tools Used**: List of tools used during the conversation
+- **Commit Context**: Details about the git command and output
+- **Claude Version**: Which version of Claude created the commit
+
+### Example Usage
+
+Let's say you're working on a project and ask Claude to implement a feature:
+
+```bash
+# You: "Add user authentication to the login form"
+# Claude uses various tools (Edit, Write, Bash) to implement the feature
+# Then creates a commit:
+
+git commit -m "Add user authentication with password validation
+
+- Implement bcrypt password hashing
+- Add login form validation
+- Create user session management
+- Add error handling for failed logins"
+```
+
+The hook automatically captures the conversation context and attaches it to the commit.
+
+### Viewing Conversation Context
+
+To view the conversation context attached to any commit:
+
+```bash
+# View notes for the latest commit
+git notes --ref=claude-conversations show HEAD
+
+# View notes for a specific commit
+git notes --ref=claude-conversations show abc1234
+
+# View notes in git log (one-liner)
+git log --show-notes=claude-conversations --oneline
+
+# View detailed notes in git log
+git log --show-notes=claude-conversations -1
+```
+
+### Example Output
+
+```json
+{
+  "session_id": "claude_session_20250121_143022",
+  "timestamp": "2025-01-21T14:30:45Z",
+  "conversation_excerpt": "Recent user prompts:\n- Add user authentication to the login form\n- Make sure to use bcrypt for password hashing\n\nTool interactions:\n- Edit: components/LoginForm.jsx\n- Write: utils/auth.js\n- Bash: npm install bcrypt",
+  "tools_used": ["Edit", "Write", "Bash"],
+  "commit_context": "Git command: git commit -m 'Add user authentication with password validation'\nResult: [main abc1234] Add user authentication with password validation",
+  "claude_version": "claude-sonnet-4-20250514"
+}
+```
+
+### Configuration
+
+Customize the git notes behavior by creating `.claude/notes.json`:
+
+```json
+{
+  "enabled": true,
+  "max_excerpt_length": 5000,
+  "max_prompts": 2,
+  "include_tool_output": false,
+  "notes_ref": "claude-conversations",
+  "exclude_patterns": ["password", "token", "key", "secret"]
+}
+```
+
+### Privacy Controls
+
+The system includes built-in privacy protections:
+- Automatically filters sensitive patterns (passwords, tokens, keys)
+- Limits excerpt length to prevent excessive data storage
+- Only includes conversation context from the current session
+- Configurable exclusion patterns
+- Option to disable entirely (`"enabled": false`)
+
+### Sharing Git Notes
+
+Git notes are stored locally by default. To share them with your team:
+
+```bash
+# Push notes to remote repository
+git push origin refs/notes/claude-conversations
+
+# Pull notes from remote repository
+git fetch origin refs/notes/claude-conversations:refs/notes/claude-conversations
+
+# Configure automatic notes fetching
+git config remote.origin.fetch '+refs/notes/*:refs/notes/*'
+```
+
 ## Testing Hooks
 
 Test individual hooks by piping JSON:
