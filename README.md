@@ -4,6 +4,8 @@
 
 ⭐️ `cnotes` is pronounced like 💵 c-notes or 🏊 [_cenotes_](https://en.wikipedia.org/wiki/Cenote)
 
+This is a test edit to verify the conversational format is working.
+
 ## Quick Start
 
 ```bash
