@@ -1,0 +1,12 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T14:44:31.536841-04:00",
+  "conversation_excerpt": "Tool (Edit): /Users/jason/git/hooks/CLAUDE.md\n\nTool (Bash): git add -A \u0026\u0026 git commit -m \"Document emoji configuration in CLAUDE.md\"\n\nTool (Bash): git push\n\n🤖 Claude: Successfully implemented configurable emojis! The `cnotes show` command now displays:\n- 🧑 for user messages (default, configurable via `user_emoji` in notes.json)\n- 🤖 for assistant messages (...\n\n🧑 User: User prompts are missing from the notes\n\n🤖 Claude: Let me check the latest commit to see if user prompts are being captured:\n\nTool (Bash): ./cnotes show HEAD | grep -E \"(User:|🧑)\" | head -10\n\n🤖 Claude: Let me check the full output:\n\nTool (Bash): ./cnotes show HEAD\n\n🤖 Claude: You're right - I don't see any user prompts in this output. Let me debug this by checking the raw git note:\n\nTool (Bash): git notes --ref=claude-conversations show HEAD | jq -r '.conversation_excerpt' | grep -E \"(User:|🧑)\" | head -5\n\n🤖 Claude: It seems the user prompts aren't being captured. Let me check the previous commit to see if there were user prompts:\n\nTool (Bash): git notes --ref=claude-conversations show HEAD~1 | jq -r '.conversation_excerpt' | head -20\n\n🤖 Claude: So the previous commit had the user prompt, but the latest one doesn't. This suggests that the issue is with the timing - when we commit, the transcript might not include the user prompt that trigg...\n\nTool (Read): /Users/jason/git/hooks/cmd/root.go\n\n🤖 Claude: Let me check the getLastCommitTimeForSession function:\n\nTool (Read): /Users/jason/git/hooks/cmd/root.go\n\n🤖 Claude: I see the issue. When we make a commit, we're only capturing events that happened after the previous commit. But if the user prompt happened before we started making changes, it might fall outside ...\n\nTool (Edit): /Users/jason/git/hooks/README.md\n\nTool (Bash): git add README.md \u0026\u0026 git commit -m \"Debug: Test commit to check user prompt capture\"",
+  "tools_used": [
+    "Bash",
+    "Edit",
+    "Read"
+  ],
+  "commit_context": "Git command: git add README.md \u0026\u0026 git commit -m \"Debug: Test commit to check user prompt capture\"\nResult: [main a5c285a] Debug: Test commit to check user prompt capture",
+  "claude_version": "claude-sonnet-4-20250514"
+}
