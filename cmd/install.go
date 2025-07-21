@@ -71,7 +71,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		if err := config.UninstallHooksFromPath(executable, settingsPath); err != nil {
 			return fmt.Errorf("failed to uninstall hooks: %w", err)
 		}
-		fmt.Printf("✓ Hooks uninstalled successfully from %s settings\n", scope)
+		fmt.Printf("✓ cnotes uninstalled successfully from %s settings\n", scope)
 		return nil
 	}
 
@@ -80,18 +80,19 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to install hooks: %w", err)
 	}
 
-	fmt.Printf("✓ Hooks installed successfully to %s settings\n", scope)
+	fmt.Printf("✓ cnotes installed successfully to %s settings\n", scope)
 	fmt.Printf("  Binary: %s\n", executable)
 	fmt.Printf("  Settings: %s\n", settingsPath)
-	fmt.Printf("\nThe following hooks are now active:\n")
-	fmt.Println("  • pre_tool_use: Validates bash commands and prevents sensitive file edits")
-	fmt.Println("  • post_tool_use: Logs tool usage and runs goimports on modified Go files")
-	fmt.Println("  • user_prompt_submit: Adds project context to prompts")
-	fmt.Println("  • notification: Logs notification events")
-	fmt.Println("  • stop: Logs session completion")
-	fmt.Println("  • subagent_stop: Logs subagent completion")
-	fmt.Println("  • pre_compact: Handles context compaction events")
-	fmt.Println("\nTo test: echo '{\"event\":\"pre_tool_use\",\"tool\":\"Bash\",\"tool_use_request\":{\"tool\":\"Bash\",\"parameters\":{\"command\":\"ls\"}}}' | cnotes")
+	fmt.Printf("\nWhat cnotes does:\n")
+	fmt.Println("  • Monitors git commit commands executed through Claude")
+	fmt.Println("  • Automatically captures conversation context in git notes")
+	fmt.Println("  • Includes user prompts and tool interactions since last commit")
+	fmt.Println("  • Scans all transcript files in the project for cross-session context")
+	fmt.Printf("\nGit notes configuration:\n")
+	fmt.Printf("  • Notes ref: claude-conversations\n")
+	fmt.Printf("  • Use 'cnotes show' to view conversation notes for commits\n")
+	fmt.Printf("  • Use 'cnotes list' to see all commits with notes\n")
+	fmt.Printf("  • Use 'cnotes backup/restore' to manage your notes\n")
 
 	return nil
 }
