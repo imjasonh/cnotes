@@ -107,7 +107,9 @@ Create `.claude/notes.json` to customize behavior:
   "max_excerpt_length": 5000,
   "max_prompts": 2,
   "notes_ref": "claude-conversations",
-  "exclude_patterns": ["password", "token", "key", "secret"]
+  "exclude_patterns": ["password", "token", "key", "secret"],
+  "user_emoji": "🧑",
+  "assistant_emoji": "🤖"
 }
 ```
 

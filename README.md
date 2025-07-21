@@ -4,8 +4,6 @@
 
 ⭐️ `cnotes` is pronounced like 💵 c-notes or 🏊 [_cenotes_](https://en.wikipedia.org/wiki/Cenote)
 
-The conversation display now includes configurable emojis for user and assistant messages.
-
 ## Quick Start
 
 ```bash
