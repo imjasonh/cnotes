@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -58,9 +59,51 @@ func (ce *ContextExtractor) ExtractContextSince(transcriptPath string, sessionID
 		return &ConversationContext{}, nil
 	}
 
+	// Get the directory containing transcripts
+	transcriptDir := filepath.Dir(transcriptPath)
+	
+	// Initialize combined context
+	combinedContext := &ConversationContext{
+		UserPrompts:      []string{},
+		ClaudeResponses:  []string{},
+		ToolInteractions: []ToolInteraction{},
+	}
+
+	// Read all transcript files in the directory
+	files, err := os.ReadDir(transcriptDir)
+	if err != nil {
+		// If we can't read the directory, fall back to just the current transcript
+		return ce.extractFromSingleTranscript(transcriptPath, sessionID, since)
+	}
+
+	// Process each transcript file
+	for _, file := range files {
+		if !strings.HasSuffix(file.Name(), ".jsonl") {
+			continue
+		}
+		
+		filePath := filepath.Join(transcriptDir, file.Name())
+		context, err := ce.extractFromSingleTranscript(filePath, "", since) // Empty sessionID to get all sessions
+		if err != nil {
+			continue // Skip files that can't be read
+		}
+		
+		// Merge contexts
+		combinedContext.UserPrompts = append(combinedContext.UserPrompts, context.UserPrompts...)
+		combinedContext.ClaudeResponses = append(combinedContext.ClaudeResponses, context.ClaudeResponses...)
+		combinedContext.ToolInteractions = append(combinedContext.ToolInteractions, context.ToolInteractions...)
+	}
+
+	// Apply privacy filters
+	combinedContext = ce.filterSensitiveContent(combinedContext)
+
+	return combinedContext, nil
+}
+
+// extractFromSingleTranscript extracts context from a single transcript file
+func (ce *ContextExtractor) extractFromSingleTranscript(transcriptPath string, sessionID string, since time.Time) (*ConversationContext, error) {
 	file, err := os.Open(transcriptPath)
 	if err != nil {
-		// Transcript might not exist, return empty context
 		return &ConversationContext{}, nil
 	}
 	defer file.Close()
@@ -72,9 +115,6 @@ func (ce *ContextExtractor) ExtractContextSince(transcriptPath string, sessionID
 
 	// Parse the transcript content
 	context := ce.parseTranscriptContent(string(content), sessionID, since)
-
-	// Apply privacy filters
-	context = ce.filterSensitiveContent(context)
 
 	return context, nil
 }
@@ -102,10 +142,12 @@ func (ce *ContextExtractor) parseTranscriptContent(content, sessionID string, si
 			continue // Skip invalid JSON lines
 		}
 
-		// Only process entries for the current session
-		entrySessionID, _ := entry["sessionId"].(string)
-		if entrySessionID != "" && entrySessionID != sessionID {
-			continue
+		// Only process entries for the current session (unless sessionID is empty)
+		if sessionID != "" {
+			entrySessionID, _ := entry["sessionId"].(string)
+			if entrySessionID != "" && entrySessionID != sessionID {
+				continue
+			}
 		}
 
 		// Filter by timestamp if provided
