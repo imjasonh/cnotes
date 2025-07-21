@@ -1,0 +1,12 @@
+{
+  "session_id": "74f50245-6c21-42b6-8dfe-9b83ba8876fb",
+  "timestamp": "2025-07-21T14:32:40.029724-04:00",
+  "conversation_excerpt": "\nTool interactions since last commit:\n- Bash: git add -A \u0026\u0026 git commit -m \"Add conversational flow to cnotes show command\"\n- Bash: ./cnotes show\n- Bash: git notes --ref=claude-conversations show HEAD | jq '.' | head -30\n- Bash: go build -o cnotes \u0026\u0026 ./cnotes install\n- Edit: /Users/jason/git/hooks/README.md\n- Read: /Users/jason/git/hooks/README.md\n- Edit: /Users/jason/git/hooks/README.md\n- Bash: git add README.md \u0026\u0026 git commit -m \"Update README to mention conversational transcript format\"",
+  "tools_used": [
+    "Bash",
+    "Edit",
+    "Read"
+  ],
+  "commit_context": "Git command: git add README.md \u0026\u0026 git commit -m \"Update README to mention conversational transcript format\"\nResult: [main 03ccfdb] Update README to mention conversational transcript format",
+  "claude_version": "claude-sonnet-4-20250514"
+}
