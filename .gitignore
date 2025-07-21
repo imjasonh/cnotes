@@ -19,7 +19,7 @@ go.work
 go.work.sum
 
 # Binary
-hooks
+cnotes
 
 # IDE files
 .idea/
