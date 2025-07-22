@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/imjasonh/cnotes/cmd"
+	"github.com/imjasonh/cnotes/internal/commands"
 )
 
 func main() {
-	cmd.Execute()
+	commands.Execute()
 }

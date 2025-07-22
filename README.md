@@ -197,34 +197,26 @@ echo '{"hook_event_name":"PostToolUse",...}' | cnotes
 
 ## Sharing Git Notes
 
-Git notes are local by default. To share with your team:
+Git notes are local by default. To share them with your team:
 
 ```bash
-# Push notes to remote
+# Push notes manually
 git push origin refs/notes/claude-conversations
 
 # Pull notes from remote  
 git fetch origin refs/notes/claude-conversations:refs/notes/claude-conversations
-
-# Configure automatic notes syncing
-git config remote.origin.fetch '+refs/notes/*:refs/notes/*'
 ```
 
-### Automatically Push Notes with Commits
+### Automatic Notes Pushing (Recommended)
 
-To ensure notes are always pushed when you push commits, you can use a git pre-push hook. See [`examples/pre-push-hook.sh`](examples/pre-push-hook.sh) for a working example:
+Configure git to automatically push notes whenever you push commits:
 
 ```bash
-# Install the pre-push hook
-cp examples/pre-push-hook.sh .git/hooks/pre-push
-chmod +x .git/hooks/pre-push
+# Set up automatic notes pushing
+git config --add remote.origin.push '+refs/notes/claude-conversations:refs/notes/claude-conversations'
 ```
 
-This hook will:
-- Automatically push notes whenever you push commits
-- Prevent infinite recursion using an environment variable flag
-- Show success/failure messages
-- Continue with the regular push even if notes fail to push
+After this one-time setup, every `git push` will automatically include your notes. This is the most reliable way to ensure notes are always synchronized with your commits.
 
 ## Chrome Extension
 
