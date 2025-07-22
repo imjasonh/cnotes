@@ -24,7 +24,7 @@ func TestLoadSettings(t *testing.T) {
 		}
 
 		if settings == nil {
-			t.Error("expected empty settings, got nil")
+			t.Fatal("expected empty settings, got nil")
 		}
 
 		if settings.Hooks == nil {
