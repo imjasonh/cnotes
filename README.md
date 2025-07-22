@@ -210,6 +210,22 @@ git fetch origin refs/notes/claude-conversations:refs/notes/claude-conversations
 git config remote.origin.fetch '+refs/notes/*:refs/notes/*'
 ```
 
+### Automatically Push Notes with Commits
+
+To ensure notes are always pushed when you push commits, you can use a git pre-push hook. See [`examples/pre-push-hook.sh`](examples/pre-push-hook.sh) for a working example:
+
+```bash
+# Install the pre-push hook
+cp examples/pre-push-hook.sh .git/hooks/pre-push
+chmod +x .git/hooks/pre-push
+```
+
+This hook will:
+- Automatically push notes whenever you push commits
+- Prevent infinite recursion using an environment variable flag
+- Show success/failure messages
+- Continue with the regular push even if notes fail to push
+
 ---
 
 **⚠️ Security Notice**: cnotes executes as a Claude Code hook handler. Ensure your installation is secure and trusted.
