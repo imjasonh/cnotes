@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="#0366d6"/>
+  
+  <!-- Git branch symbol -->
+  <g fill="white">
+    <!-- Main branch -->
+    <rect x="30" y="60" width="50" height="8" rx="4"/>
+    
+    <!-- Branch -->
+    <rect x="70" y="40" width="8" height="28" rx="4"/>
+    <rect x="70" y="40" width="28" height="8" rx="4"/>
+    
+    <!-- Commit dots -->
+    <circle cx="34" cy="64" r="6"/>
+    <circle cx="54" cy="64" r="6"/>
+    <circle cx="74" cy="64" r="6"/>
+    <circle cx="94" cy="44" r="6"/>
+    
+    <!-- Note symbol (document) -->
+    <path d="M 45 75 L 45 95 L 65 95 L 65 85 L 55 85 L 55 75 Z" />
+    <path d="M 55 85 L 55 91 L 61 91 Z" fill="#0366d6"/>
+  </g>
+</svg>

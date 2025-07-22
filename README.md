@@ -226,6 +226,21 @@ This hook will:
 - Show success/failure messages
 - Continue with the regular push even if notes fail to push
 
+## Chrome Extension
+
+A Chrome extension is available to view git notes directly on GitHub commit pages. See [`chrome-extension/`](chrome-extension/) for details.
+
+### Features
+- 🔢 Shows badge indicator when commits have notes
+- 📝 Displays notes in a popup when clicked
+- 🏷️ Supports multiple notes refs with tabs
+- ⚡ Works with any public repository
+
+### Installation
+1. Load the extension from `chrome-extension/` directory
+2. Navigate to any GitHub commit page
+3. Click the extension icon to view notes
+
 ---
 
 **⚠️ Security Notice**: cnotes executes as a Claude Code hook handler. Ensure your installation is secure and trusted.
