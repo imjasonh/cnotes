@@ -1,5 +1,7 @@
 # cnotes - Git Notes for Claude Conversations
 
+[![Test](https://github.com/imjasonh/cnotes/actions/workflows/test.yml/badge.svg)](https://github.com/imjasonh/cnotes/actions/workflows/test.yml)
+
 **cnotes** automatically captures Claude conversation context in [git notes](https://git-scm.com/docs/git-notes) using [Claude hooks](https://docs.anthropic.com/en/docs/claude-code/hooks), making it easy to understand the development history and reasoning behind each commit. The tool shows a conversational transcript of user prompts, tool uses, and Claude's responses.
 
 ⭐️ `cnotes` is pronounced like 💵 c-notes or 🏊 [_cenotes_](https://en.wikipedia.org/wiki/Cenote)
